@@ -1,0 +1,31 @@
+# Project files
+node_modules/
+*.pyc
+__pycache__/
+
+# Python virtual environment
+twts/
+venv/
+.venv/
+env/
+
+# Environment variables (CRITICAL - never commit!)
+.env
+.env.local
+.env.production
+secrets.json
+
+# Local development
+*.log
+.DS_Store
+.vscode/
+.idea/
+
+# Caches
+global_article_cache
+feed_history
+
+# Personal data
+twitter_accts.csv
+.venv/
+twts/

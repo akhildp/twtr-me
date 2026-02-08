@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweets and Updates</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐦</text></svg>">
+    <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
+</head>
+
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <button id="mobileMenuBtn" class="mobile-menu-btn" title="Menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <h1 class="logo"><span>RSS</span> Reader</h1>
+            </div>
+            <div class="header-center">
+                <div class="search-container">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search Twitter">
+                    <button id="searchBtn" class="search-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="mobileSearchBtn" class="icon-btn mobile-search-btn" title="Search">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </button>
+                <button id="refreshBtn" class="icon-btn" title="Refresh feeds">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+                        <path d="M3 3v5h5"></path>
+                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"></path>
+                        <path d="M16 21h5v-5"></path>
+                    </svg>
+                </button>
+                <button id="themeToggleBtn" class="icon-btn" title="Toggle theme">☀️</button>
+                <button id="settingsBtn" class="icon-btn" title="Settings">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path
+                            d="M12 1v6m0 6v10M4.22 4.22l4.24 4.24m7.08 7.08 4.24 4.24M1 12h6m6 0h10M4.22 19.78l4.24-4.24m7.08-7.08 4.24-4.24">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-container">
+            <!-- Sidebar -->
+            <aside class="sidebar" id="sidebar">
+                <div class="sidebar-header">
+                    <h2>Feeds</h2>
+                    <button id="addAccountBtn" class="add-btn" title="Add feed">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M12 5v14M5 12h14"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div id="homeBtn" class="category-header active">
+                    <span class="category-name">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        Home
+                    </span>
+                </div>
+                <div class="accounts-list" id="accountsList">
+                    <!-- Accounts will be populated here -->
+                </div>
+            </aside>
+
+            <!-- Feed Dashboard -->
+            <main class="dashboard" id="dashboard">
+                <!-- Column 1: Home Mix (Fixed) -->
+                <div class="column" id="col-1">
+                    <div class="column-header-dash">
+                        <div class="column-title">
+                            <span class="column-icon">🏠</span>
+                            <h3>Home</h3>
+                        </div>
+                    </div>
+                    <div class="column-content" id="col-1-content">
+                        <!-- Content -->
+                    </div>
+                </div>
+
+                <!-- Column 2: Configurable -->
+                <div class="column" id="col-2">
+                    <div class="column-header-dash">
+                        <div class="column-title" id="col-2-title">
+                            <span class="column-icon">📑</span>
+                            <h3>Column 2</h3>
+                        </div>
+                        <button class="column-config-btn" onclick="app.openColumnConfig(2)">⚙️</button>
+                    </div>
+                    <div class="column-content" id="col-2-content">
+                        <!-- Content -->
+                    </div>
+                </div>
+
+                <!-- Column 3: Configurable -->
+                <div class="column" id="col-3">
+                    <div class="column-header-dash">
+                        <div class="column-title" id="col-3-title">
+                            <span class="column-icon">📑</span>
+                            <h3>Column 3</h3>
+                        </div>
+                        <button class="column-config-btn" onclick="app.openColumnConfig(3)">⚙️</button>
+                    </div>
+                    <div class="column-content" id="col-3-content">
+                        <!-- Content -->
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- Column Config Modal -->
+        <div class="modal" id="columnConfigModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Configure Column <span id="configColumnId"></span></h3>
+                    <button class="modal-close" onclick="app.closeColumnConfig()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label>Select Content Source</label>
+                    <select id="columnSourceSelect" class="modal-input">
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeColumnConfig()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.saveColumnConfig()">Save Column</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Feed Modal -->
+        <div class="modal" id="addAccountModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add RSS Feed</h3>
+                    <button class="modal-close" onclick="app.closeAddFeed()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <label for="usernameInput">Feed Name</label>
+                    <input type="text" id="usernameInput" class="modal-input" placeholder="e.g. TechCrunch">
+                    <label for="feedUrlInput" style="margin-top: 12px; display: block;">RSS Feed URL</label>
+                    <input type="url" id="feedUrlInput" class="modal-input" placeholder="https://example.com/rss.xml">
+                    <p class="modal-hint">Enter the name and RSS feed URL</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" onclick="app.closeAddFeed()">Cancel</button>
+                    <button class="btn btn-primary" onclick="app.addFeed()">Add Feed</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Results Modal -->
+        <div class="modal" id="searchModal">
+            <div class="modal-content modal-large">
+                <div class="modal-header">
+                    <h3>Search Results</h3>
+                    <button class="modal-close" id="closeSearchModal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="searchFrame" class="search-frame"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div class="modal" id="settingsModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Settings</h3>
+                    <button class="modal-close" onclick="app.closeSettings()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-item">
+                        <label for="refreshInterval">Auto-refresh interval</label>
+                        <select id="refreshInterval" class="modal-input">
+                            <option value="0">Disabled</option>
+                            <option value="5">5 minutes</option>
+                            <option value="10" selected>10 minutes</option>
+                            <option value="30">30 minutes</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="app.saveSettingsForm()">Save Settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
