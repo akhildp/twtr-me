@@ -46,7 +46,18 @@ if (isPostgres) {
     const dbPath = path.resolve(__dirname, 'tweets.db');
     db = new sqlite3.Database(dbPath, (err) => {
         if (err) console.error('Error opening SQLite DB:', err.message);
-        else console.log('Connected to SQLite database.');
+        else {
+            console.log('Connected to SQLite database.');
+            // Enable WAL mode for better concurrency (prevents "Pending" hangs)
+            db.run('PRAGMA journal_mode = WAL;');
+            db.run('PRAGMA synchronous = NORMAL;');
+
+            // Ensure indexes for performance
+            db.run('CREATE INDEX IF NOT EXISTS idx_tweets_published_at ON tweets(published_at DESC);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_rss_published_at ON rss(published_at DESC);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_tweets_feed_url ON tweets(feed_url);');
+            db.run('CREATE INDEX IF NOT EXISTS idx_rss_feed_url ON rss(feed_url);');
+        }
     });
 }
 
@@ -96,6 +107,10 @@ const activeRefreshes = new Set();
 const triggerRefresh = async (type, feedUrl = null) => {
     const key = feedUrl || type;
     if (activeRefreshes.has(key)) return;
+
+    // If it's a global refresh (mix/tweets/rss), check if 'mix' is already refreshing
+    if (!feedUrl && type !== 'mix' && activeRefreshes.has('mix')) return;
+
     activeRefreshes.add(key);
 
     console.log(`[Refresh] Triggering background refresh for: ${key}`);
@@ -291,7 +306,10 @@ app.get('/api/tweets', async (req, res) => {
 
     try {
         const refreshing = await isStale('tweets');
-        if (refreshing) triggerRefresh('tweets');
+        if (refreshing) {
+            // FIRE AND FORGET - Don't await the background refresh process itself
+            triggerRefresh('tweets').catch(e => console.error(`Failed to trigger refresh: ${e.message}`));
+        }
 
         let sql = 'SELECT * FROM tweets ORDER BY published_at DESC LIMIT ? OFFSET ?';
         const params = [parseInt(limit), parseInt(offset)];
@@ -314,7 +332,9 @@ app.get('/api/rss', async (req, res) => {
 
     try {
         const refreshing = await isStale('rss');
-        if (refreshing) triggerRefresh('rss');
+        if (refreshing) {
+            triggerRefresh('rss').catch(e => console.error(`Failed to trigger refresh: ${e.message}`));
+        }
 
         let sql = 'SELECT * FROM rss ORDER BY published_at DESC LIMIT ? OFFSET ?';
         const params = [parseInt(limit), parseInt(offset)];
@@ -337,7 +357,9 @@ app.get('/api/mix', async (req, res) => {
 
     try {
         const refreshing = (await isStale('rss')) || (await isStale('tweets'));
-        if (refreshing) triggerRefresh('mix');
+        if (refreshing) {
+            triggerRefresh('mix').catch(e => console.error(`Failed to trigger refresh: ${e.message}`));
+        }
 
         // For /api/mix, we want a balanced union. 
         // We'll fetch 25 of each and interleave them if the user wants true "union all" look,
