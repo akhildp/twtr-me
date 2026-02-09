@@ -336,14 +336,8 @@ app.get('/api/mix', async (req, res) => {
         // but fix the RSS fetching so it actually HAS data.
 
         let sql = `
-            SELECT * FROM (
-                SELECT id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, 'rss' as source_table 
-                FROM rss
-                UNION ALL
-                SELECT id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, 'tweets' as source_table 
-                FROM tweets
-                WHERE favorite_count > 100 OR retweet_count > 20
-            ) AS combined
+            SELECT id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, 'rss' as source_table 
+            FROM rss
             ORDER BY published_at DESC
             LIMIT ? OFFSET ?
         `;
@@ -351,14 +345,8 @@ app.get('/api/mix', async (req, res) => {
 
         if (isPostgres) {
             sql = `
-                SELECT * FROM (
-                    SELECT id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, 'rss' as source_table 
-                    FROM rss
-                    UNION ALL
-                    SELECT id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, 'tweets' as source_table 
-                    FROM tweets
-                    WHERE favorite_count > 100 OR retweet_count > 20
-                ) AS combined
+                SELECT id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, 'rss' as source_table 
+                FROM rss
                 ORDER BY published_at DESC
                 LIMIT $1 OFFSET $2
             `;

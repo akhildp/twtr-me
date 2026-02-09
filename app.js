@@ -230,9 +230,23 @@ class FeedReader {
             // Show subtle refresh indicator if backend is still fetching (only on initial load)
             if (!append && refreshing) {
                 this.showRefreshIndicator(colId);
-                setTimeout(() => this.loadColumn(colId), 5000);
+                // Exponential backoff or just longer interval + limit retries
+                // Store retry count on the instance or closure? 
+                // Let's use a simpler approach: 15s interval, max 5 retries
+                if (!this.refreshRetries) this.refreshRetries = {};
+                this.refreshRetries[colId] = (this.refreshRetries[colId] || 0) + 1;
+
+                if (this.refreshRetries[colId] <= 5) {
+                    console.log(`[Col ${colId}] Backend refreshing... checking again in 15s (Attempt ${this.refreshRetries[colId]}/5)`);
+                    setTimeout(() => this.loadColumn(colId), 15000);
+                } else {
+                    console.log(`[Col ${colId}] Refresh took too long, stopping poll.`);
+                    this.hideRefreshIndicator(colId);
+                    this.refreshRetries[colId] = 0; // Reset for next manual refresh
+                }
             } else {
                 this.hideRefreshIndicator(colId);
+                if (this.refreshRetries) this.refreshRetries[colId] = 0;
             }
 
         } catch (e) {
@@ -378,7 +392,9 @@ class FeedReader {
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = article.content || ''; // Handle null content
             const textContent = tempDiv.textContent || tempDiv.innerText || '';
-            const isLong = textContent.length > 280;
+            // Check length OR if it has many line breaks (which take up vertical space)
+            const lineBreaks = (article.content || '').split('<br>').length + (article.content || '').split('\n').length;
+            const isLong = textContent.length > 180 || lineBreaks > 4;
 
             // API returns snake_case keys: feed_url, image_url, published_at
             // Handle both snake_case (API) and camelCase (Legacy/Client-side) just in case
