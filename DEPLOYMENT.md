@@ -59,7 +59,15 @@ scp data/cookies.json deployuser@YOUR_VPS_IP:~/twtr-me/data/
 docker-compose up -d --build
 ```
 
-## 6. Verify Deployment
+## 6. Configure Firewall (Optional)
+If your VPS uses UFW (Uncomplicated Firewall), you need to allow port 3000.
+
+```bash
+sudo ufw allow 3000/tcp
+sudo ufw reload
+```
+
+## 7. Verify Deployment
 -   **Check status**: `docker ps`
 -   **View logs**: `docker-compose logs -f`
 -   **Access App**: Open `http://YOUR_VPS_IP:3000` in your browser.
