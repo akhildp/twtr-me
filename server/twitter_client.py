@@ -144,7 +144,7 @@ async def main():
     
     # Load Cookies
     cookies = None
-    cookies_path = os.path.join(os.path.dirname(__dirname), 'data', 'cookies.json')
+    cookies_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'cookies.json')
     if os.path.exists(cookies_path):
         try:
             client.load_cookies(cookies_path)

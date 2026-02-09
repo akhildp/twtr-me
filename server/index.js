@@ -153,8 +153,12 @@ const fetchAndCacheFeed = async (feedUrl, feedName = null) => {
         console.log(`  Routing to Python (Twikit): ${feedUrl}`);
 
         try {
-            const venvPath = path.join(__dirname, '../.venv', 'bin', 'python');
-            const pythonProcess = spawn(venvPath, ['twitter_client.py', feedUrl], { cwd: __dirname });
+            const venvPath = path.resolve(__dirname, '../.venv/bin/python');
+            const twitterClientPath = path.resolve(__dirname, 'twitter_client.py');
+
+            // Ensure we use the correct python path and script path
+            console.log(`  [Debug] Spawning: ${venvPath} ${twitterClientPath} ${feedUrl}`);
+            const pythonProcess = spawn(venvPath, [twitterClientPath, feedUrl], { cwd: __dirname });
 
             let data = '';
             let errorData = '';
