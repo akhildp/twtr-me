@@ -38,8 +38,8 @@ const CONFIG = {
 
     // Get API URL
     get apiUrl() {
-        const { proxyHost, proxyPort } = this.current;
-        return `http://${proxyHost}:${proxyPort}/api`;
+        // Return relative path to avoid Mixed Content errors when running over HTTPS
+        return "/api";
     }
 };
 

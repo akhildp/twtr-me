@@ -6,8 +6,9 @@ services:
     build: .
     container_name: twtr-me
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    # Internal port only, exposed via Caddy reverse proxy
+    expose:
+      - "3000"
     volumes:
       - ./data:/app/data
       - ./server/tweets.db:/app/server/tweets.db
