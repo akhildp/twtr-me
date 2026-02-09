@@ -67,9 +67,39 @@ def convert_to_rss(tweets, title, link, description):
                         if m.type == 'photo':
                             media_html += f'<br><img src="{m.media_url}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" />'
                         elif m.type == 'video':
-                            media_html += f'<br>[Video: {m.media_url}]'
-                    except Exception as e:
-                        sys.stderr.write(f"Error processing media: {e}\n")
+                            # Try to extract best quality MP4
+                            best_variant = None
+                            if hasattr(m, 'video_info') and 'variants' in m.video_info:
+                                variants = [v for v in m.video_info['variants'] if v.get('content_type') == 'video/mp4']
+                                if variants:
+                                    # Sort by bitrate descending (highest quality first)
+                                    variants.sort(key=lambda x: x.get('bitrate', 0), reverse=True)
+                                    best_variant = variants[0]
+                            
+                            poster_url = getattr(m, 'media_url_https', getattr(m, 'media_url', ''))
+                            
+                            if best_variant:
+                                media_html += f'''
+                                <br>
+                                <div style="position: relative; margin-top: 5px;">
+                                    <video controls poster="{poster_url}" style="max-width: 100%; width: 100%; border-radius: 8px; background-color: #000;" preload="metadata" onclick="event.stopPropagation()">
+                                        <source src="{best_variant['url']}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                                '''
+                            else:
+                                # Fallback: Thumbnail linking to Xcancel
+                                xcancel_url = f"https://xcancel.com/{screen_name}/status/{tweet_for_media.id}"
+                                media_html += f'''
+                                <br>
+                                <a href="{xcancel_url}" target="_blank" onclick="event.stopPropagation()" style="display: block; position: relative;">
+                                    <img src="{poster_url}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" />
+                                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); padding: 15px; border-radius: 50%;">
+                                        <div style="width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 20px solid white;"></div>
+                                    </div>
+                                </a>
+                                '''
     
             # Quote Tweet handling
             quote_html = ""
@@ -96,6 +126,38 @@ def convert_to_rss(tweets, title, link, description):
                         for m in q.media:
                             if m.type == 'photo':
                                 q_media_html += f'<br><img src="{m.media_url}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" />'
+                            elif m.type == 'video':
+                                best_variant = None
+                                if hasattr(m, 'video_info') and 'variants' in m.video_info:
+                                    variants = [v for v in m.video_info['variants'] if v.get('content_type') == 'video/mp4']
+                                    if variants:
+                                        variants.sort(key=lambda x: x.get('bitrate', 0), reverse=True)
+                                        best_variant = variants[0]
+                                
+                                poster_url = getattr(m, 'media_url_https', getattr(m, 'media_url', ''))
+                                
+                                if best_variant:
+                                    q_media_html += f'''
+                                    <br>
+                                    <div style="position: relative; margin-top: 5px;">
+                                        <video controls poster="{poster_url}" style="max-width: 100%; width: 100%; border-radius: 8px; background-color: #000;" preload="metadata" onclick="event.stopPropagation()">
+                                            <source src="{best_variant['url']}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+                                    '''
+                                else:
+                                    # Fallback
+                                    xcancel_url = f"https://xcancel.com/{q_screen}/status/{q.id}"
+                                    q_media_html += f'''
+                                    <br>
+                                    <a href="{xcancel_url}" target="_blank" onclick="event.stopPropagation()" style="display: block; position: relative;">
+                                        <img src="{poster_url}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" />
+                                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); padding: 10px; border-radius: 50%;">
+                                            <div style="width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 12px solid white;"></div>
+                                        </div>
+                                    </a>
+                                    '''
     
                     quote_html = f"""
                     <div class="quoted-tweet" style="border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333; cursor: pointer;" onclick="event.stopPropagation(); window.open('https://xcancel.com/{q_screen}/status/{q.id}', '_blank')">
