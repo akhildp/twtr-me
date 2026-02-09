@@ -162,8 +162,10 @@ def convert_to_rss(tweets, title, link, description):
                     quote_html = f"""
                     <div class="quoted-tweet" style="border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333; cursor: pointer;" onclick="event.stopPropagation(); window.open('https://xcancel.com/{q_screen}/status/{q.id}', '_blank')">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <img src="{q_avatar}" class="qt-avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
-                            <div style="font-size: 0.95em; line-height: 1.2;"><strong>{q_name}</strong> <span style="color: #888;">@{q_screen}</span></div>
+                            <a href="https://xcancel.com/{q_screen}" target="_blank" onclick="event.stopPropagation()" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                                <img src="{q_avatar}" class="qt-avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
+                                <div style="font-size: 0.95em; line-height: 1.2;"><strong>{q_name}</strong> <span style="color: #888;">@{q_screen}</span></div>
+                            </a>
                         </div>
                         <div style="font-size: 0.95em;">{q_text}</div>
                         {q_media_html}
