@@ -160,15 +160,25 @@ def convert_to_rss(tweets, title, link, description):
                                     '''
     
                     quote_html = f"""
-                    <div class="quoted-tweet" style="border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333; cursor: pointer;" onclick="event.stopPropagation(); window.open('https://xcancel.com/{q_screen}/status/{q.id}', '_blank')">
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                            <a href="https://xcancel.com/{q_screen}" target="_blank" onclick="event.stopPropagation()" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                    <div class="quoted-tweet" style="position: relative; border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333;">
+                        <!-- Overlay Link for Status (z-index 1) -->
+                        <a href="https://xcancel.com/{q_screen}/status/{q.id}" target="_blank" onclick="event.stopPropagation()" style="text-decoration: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></a>
+                        
+                        <!-- Header with Profile Link (z-index 2) -->
+                        <div style="position: relative; z-index: 2; margin-bottom: 10px; pointer-events: none;">
+                            <a href="https://xcancel.com/{q_screen}" target="_blank" onclick="event.stopPropagation()" style="text-decoration: none; color: inherit; display: inline-flex; align-items: center; gap: 10px; pointer-events: auto;">
                                 <img src="{q_avatar}" class="qt-avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
                                 <div style="font-size: 0.95em; line-height: 1.2;"><strong>{q_name}</strong> <span style="color: #888;">@{q_screen}</span></div>
                             </a>
                         </div>
-                        <div style="font-size: 0.95em;">{q_text}</div>
-                        {q_media_html}
+                        
+                        <!-- Content (behind overlay, so z-index 0 or default) -->
+                        <div style="font-size: 0.95em; position: relative; z-index: 0; pointer-events: none;">{q_text}</div>
+                        
+                        <!-- Media (z-index 2 for controls) -->
+                        <div style="position: relative; z-index: 2; pointer-events: auto;">
+                            {q_media_html}
+                        </div>
                     </div>
                     """
                 except Exception as e:
