@@ -3,7 +3,13 @@
 
 This guide assumes you have a fresh Ubuntu/Debian VPS and are logged in as `root`.
 
-## 1. Create a Deployment User
+## 1. Install Dependencies (as root)
+```bash
+# Update and install Git, Docker, and Docker Compose
+apt update && apt install -y git docker.io docker-compose
+```
+
+## 2. Create a Deployment User
 For security, run the application as a non-root user (e.g., `deployuser`).
 
 ```bash
@@ -18,15 +24,9 @@ groups deployuser
 # Output should include: deployuser sudo docker
 ```
 
-## 2. Switch to `deployuser`
+## 3. Switch to `deployuser`
 ```bash
 su - deployuser
-```
-
-## 3. Install Dependencies
-```bash
-# Update and install Git, Docker, and Docker Compose
-sudo apt update && sudo apt install -y git docker.io docker-compose
 ```
 
 ## 4. Setting Up the Application
