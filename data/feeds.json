@@ -6,11 +6,6 @@
             "subcategory": "Mixed"
         },
         {
-            "name": "AI & ML",
-            "url": "https://x.com/i/lists/YOUR_AI_LIST_ID_HERE",
-            "subcategory": "AI"
-        },
-        {
             "name": "FinTwit / Markets",
             "url": "https://x.com/i/lists/1668655026263277570",
             "subcategory": "Finance"
@@ -54,6 +49,13 @@
             "name": "India RW",
             "url": "https://x.com/i/lists/1658795138397900801",
             "subcategory": "India"
+        }
+    ],
+    "_Twitter Lists (Disabled)": [
+        {
+            "name": "AI & ML",
+            "url": "https://x.com/i/lists/YOUR_AI_LIST_ID_HERE",
+            "subcategory": "AI"
         },
         {
             "name": "Arts (Music/Photo)",
