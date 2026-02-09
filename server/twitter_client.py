@@ -161,8 +161,9 @@ def convert_to_rss(tweets, title, link, description):
     
                     quote_html = f"""
                     <div class="quoted-tweet" style="position: relative; border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333;">
-                        <!-- Overlay Link for Status (z-index 1) -->
-                        <a href="https://xcancel.com/{q_screen}/status/{q.id}" target="_blank" onclick="event.stopPropagation()" style="text-decoration: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></a>
+                        <!-- Overlay Link for Status (z-index 1) - DEBUG MODE -->
+                        <!-- Added display:block, cursor:help, and red tint to verify presence -->
+                        <a href="https://xcancel.com/{q_screen}/status/{q.id}" target="_blank" onclick="event.stopPropagation()" style="display: block; text-decoration: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: help; background: rgba(255, 0, 0, 0.1);"></a>
                         
                         <!-- Header with Profile Link (z-index 2) -->
                         <div style="position: relative; z-index: 2; margin-bottom: 10px; pointer-events: none;">
