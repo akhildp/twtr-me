@@ -287,10 +287,6 @@
     ],
     "Music": [
         {
-            "name": "Billboard",
-            "url": "https://www.billboard.com/articles/rss.xml"
-        },
-        {
             "name": "Consequence",
             "url": "http://consequenceofsound.net/feed"
         },

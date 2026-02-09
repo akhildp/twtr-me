@@ -24,7 +24,12 @@ app.use(cors());
 app.use(express.json());
 
 // Serve static frontend files
-app.use(express.static(path.join(__dirname, '.')));
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Explicitly serve feeds.json from data directory
+app.get('/feeds.json', (req, res) => {
+    res.sendFile(path.join(__dirname, '../data/feeds.json'));
+});
 
 // Database Connection
 let db;
@@ -100,7 +105,7 @@ const triggerRefresh = async (type, feedUrl = null) => {
             await fetchAndCacheFeed(feedUrl);
         } else {
             // Global refresh (e.g. for /api/tweets or /api/mix)
-            const feedsData = JSON.parse(fs.readFileSync(path.join(__dirname, 'feeds.json'), 'utf8'));
+            const feedsData = JSON.parse(fs.readFileSync(path.join(__dirname, '../data/feeds.json'), 'utf8'));
             for (const category in feedsData) {
                 for (const feed of feedsData[category]) {
                     const isTwitter = feed.url.includes('twitter.com') || feed.url.includes('x.com') || feed.url.includes('nitter');
@@ -148,8 +153,8 @@ const fetchAndCacheFeed = async (feedUrl, feedName = '') => {
         console.log(`  Routing to Python (Twikit): ${feedUrl}`);
 
         try {
-            const venvPath = path.join(__dirname, '.venv', 'bin', 'python');
-            const pythonProcess = spawn(venvPath, ['twitter_client.py', feedUrl]);
+            const venvPath = path.join(__dirname, '../.venv', 'bin', 'python');
+            const pythonProcess = spawn(venvPath, ['twitter_client.py', feedUrl], { cwd: __dirname });
 
             let data = '';
             let errorData = '';

@@ -143,11 +143,11 @@ async def main():
     target_url = sys.argv[1]
     
     # Load Cookies
-    # Load Cookies
     cookies = None
-    if os.path.exists('cookies.json'):
+    cookies_path = os.path.join(os.path.dirname(__dirname), 'data', 'cookies.json')
+    if os.path.exists(cookies_path):
         try:
-            client.load_cookies('cookies.json')
+            client.load_cookies(cookies_path)
             # print("Loaded cookies from file")
         except Exception as e:
             print(f"Error loading cookies from file: {e}")

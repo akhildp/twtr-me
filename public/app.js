@@ -1074,12 +1074,18 @@ class FeedReader {
 }
 
 fetch('feeds.json')
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) throw new Error(`Failed to load feeds.json: ${r.status} ${r.statusText}`);
+        return r.json();
+    })
     .then(data => {
         FEED_CATEGORIES = data;
         window.app = new FeedReader();
     })
-    .catch(e => console.error(e));
+    .catch(e => {
+        console.error('Error initializing app:', e);
+        document.body.innerHTML = `<div style="color:red; padding:20px;">Error loading configuration: ${e.message}</div>`;
+    });
 // Add styles for quote tweets
 const style = document.createElement('style');
 style.textContent = `

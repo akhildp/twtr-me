@@ -35,5 +35,7 @@ __pycache__/
 .DS_Store
 
 # Security
-cookies.json
+data/cookies.json
+server/tweets.db
 tweets.db
+cookies.json
