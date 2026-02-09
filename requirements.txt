@@ -1,0 +1,11 @@
+
+# Core dependencies
+twikit>=1.0.0
+feedparser>=6.0.0
+requests>=2.0.0
+
+# Optional Database Support
+psycopg2-binary>=2.9.0
+
+# Server (if running Python backend separately, but handled by Node here)
+# flask? No, server is Node.js. Python is just a script.

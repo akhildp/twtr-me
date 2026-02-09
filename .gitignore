@@ -1,3 +1,4 @@
+
 # Project files
 node_modules/
 *.pyc
@@ -34,8 +35,10 @@ logs/
 __pycache__/
 .DS_Store
 
-# Security
+# Security & Data
 data/cookies.json
 server/tweets.db
 tweets.db
 cookies.json
+*.db
+data/*.db

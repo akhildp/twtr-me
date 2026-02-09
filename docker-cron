@@ -1,0 +1,5 @@
+
+# Cron job for Docker container
+# Runs every hour at minute 0
+0 * * * * cd /app/server && /app/.venv/bin/python fetch_tweets_cron.py >> /app/data/logs/cron.log 2>&1
+# Don't forget the newline at the end

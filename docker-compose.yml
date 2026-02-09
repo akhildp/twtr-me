@@ -1,0 +1,17 @@
+
+version: '3.8'
+
+services:
+  app:
+    build: .
+    container_name: twtr-me
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./server/tweets.db:/app/server/tweets.db
+    environment:
+      - NODE_ENV=production
+    # If using Postgres later:
+    # - DATABASE_URL=postgresql://user:pass@db:5432/twtr_me
