@@ -97,9 +97,10 @@ def convert_to_rss(tweets, title, link, description):
                                     <img src="{poster_url}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" />
                                     <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.6); padding: 15px; border-radius: 50%;">
                                         <div style="width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 20px solid white;"></div>
-                                    </div>
                                 </a>
                                 '''
+                    except Exception as e:
+                        sys.stderr.write(f"Error processing media: {e}\n")
     
             # Quote Tweet handling
             quote_html = ""
@@ -161,9 +162,8 @@ def convert_to_rss(tweets, title, link, description):
     
                     quote_html = f"""
                     <div class="quoted-tweet" style="position: relative; border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333;">
-                        <!-- Overlay Link for Status (z-index 1) - DEBUG MODE -->
-                        <!-- Added display:block, cursor:help, and red tint to verify presence -->
-                        <a href="https://xcancel.com/{q_screen}/status/{q.id}" target="_blank" onclick="event.stopPropagation()" style="display: block; text-decoration: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; cursor: help; background: rgba(255, 0, 0, 0.1);"></a>
+                        <!-- Overlay Link for Status (z-index 1) -->
+                        <a href="https://xcancel.com/{q_screen}/status/{q.id}" target="_blank" onclick="event.stopPropagation()" style="text-decoration: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;"></a>
                         
                         <!-- Header with Profile Link (z-index 2) -->
                         <div style="position: relative; z-index: 2; margin-bottom: 10px; pointer-events: none;">
