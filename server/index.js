@@ -139,7 +139,7 @@ app.post('/api/refresh/all', async (req, res) => {
 // GET /api/tweets
 
 
-const fetchAndCacheFeed = async (feedUrl, feedName = '') => {
+const fetchAndCacheFeed = async (feedUrl, feedName = null) => {
     console.log(`[RealTime] Fetching fresh data for ${feedUrl}...`);
 
     const isTwitter = feedUrl.includes('twitter.com') || feedUrl.includes('x.com') || feedUrl.includes('nitter');
@@ -252,10 +252,12 @@ const fetchAndCacheFeed = async (feedUrl, feedName = '') => {
             if (isPostgres) {
                 sql = `INSERT INTO ${table} (id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, favorite_count, retweet_count)
                        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-                       ON CONFLICT (id) DO NOTHING`;
+                       ON CONFLICT (id) DO UPDATE SET feed_name = EXCLUDED.feed_name, author = EXCLUDED.author, author_avatar = EXCLUDED.author_avatar, favorite_count = EXCLUDED.favorite_count, retweet_count = EXCLUDED.retweet_count`;
             } else {
-                sql = `INSERT OR IGNORE INTO ${table} (id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, favorite_count, retweet_count)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                // SQLite Upsert
+                sql = `INSERT INTO ${table} (id, feed_url, feed_name, title, content, author, link, image_url, published_at, author_avatar, favorite_count, retweet_count)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                       ON CONFLICT(id) DO UPDATE SET feed_name = excluded.feed_name, author = excluded.author, author_avatar = excluded.author_avatar, favorite_count = excluded.favorite_count, retweet_count = excluded.retweet_count`;
             }
 
             if (isPostgres) {

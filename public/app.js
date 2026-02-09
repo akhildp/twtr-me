@@ -61,10 +61,10 @@ class FeedReader {
 
     // --- Loading Columns ---
 
-    async loadAllColumns() {
-        this.loadColumn(1);
-        setTimeout(() => this.loadColumn(2), 500);
-        setTimeout(() => this.loadColumn(3), 1000);
+    async loadAllColumns(isBackground = false) {
+        this.loadColumn(1, false, isBackground);
+        setTimeout(() => this.loadColumn(2, false, isBackground), 500);
+        setTimeout(() => this.loadColumn(3, false, isBackground), 1000);
     }
 
     // --- Feed Diversity Algorithm --- (Preserved but mostly unused now)
@@ -151,7 +151,7 @@ class FeedReader {
         localStorage.setItem('feed_history', JSON.stringify(this.feedHistory));
     }
 
-    async loadColumn(colId, append = false) {
+    async loadColumn(colId, append = false, isBackground = false) {
         const col = this.columns.find(c => c.id === colId);
         if (!col) return;
 
@@ -170,7 +170,8 @@ class FeedReader {
             headerTitle.innerHTML = `<span class="column-icon">${col.icon}</span> ${col.title}`;
         }
 
-        if (!append && container) {
+        // Only show full loading spinner if NOT a background refresh and NOT appending
+        if (!append && !isBackground && container) {
             container.innerHTML = `
                 <div class="feed-loading">
                     <div class="spinner"></div>
@@ -220,8 +221,27 @@ class FeedReader {
             if (append) {
                 this.appendArticles(colId, processedArticles);
             } else {
-                this.renderArticles(colId, processedArticles);
-                this.setupScrollObserver(colId);
+                // If background refresh and user is scrolled down, DON'T replace content
+                // check scrollTop of reference (container usually doesn't scroll, parent does)
+                const scrollParent = container.parentElement;
+                // .column-content is usually the scrollable area in dashboard layout?
+                // Actually container IS the content div. Check styles.css? 
+                // Usually it's #col-X-content or the .column body. The ID is on the specific div.
+                // Assuming container parent is the scrollable .column-body
+
+                const currentScroll = scrollParent ? scrollParent.scrollTop : 0;
+
+                if (isBackground && currentScroll > 100) {
+                    console.log(`[Col ${colId}] Scrolled down (${currentScroll}px), skipping auto-refresh render.`);
+                    // TODO: Show "New Posts" indicator in header
+                    this.showNewContentIndicator(colId);
+                } else {
+                    this.renderArticles(colId, processedArticles);
+                    this.setupScrollObserver(colId);
+                    if (isBackground) {
+                        console.log(`[Col ${colId}] Auto-refreshed (at top).`);
+                    }
+                }
             }
 
             this.columnOffsets[colId] += articles.length;
@@ -330,6 +350,25 @@ class FeedReader {
         if (!header) return;
         const indicator = header.parentElement.querySelector('.refresh-indicator');
         if (indicator) indicator.remove();
+    }
+
+    showNewContentIndicator(colId) {
+        const header = document.querySelector(`#col-${colId} .column-header`);
+        if (!header) return;
+
+        // Remove existing if any
+        let existing = header.parentElement.querySelector('.new-content-indicator');
+        if (existing) return;
+
+        const indicator = document.createElement('div');
+        indicator.className = 'new-content-indicator';
+        indicator.innerHTML = `✨ New posts available - Click to refresh`;
+        indicator.style.cssText = 'background:var(--accent); color:white; padding:8px; text-align:center; cursor:pointer; font-size:13px; font-weight:bold;';
+        indicator.onclick = () => {
+            this.loadColumn(colId); // Manual refresh (wipes content, reset scroll)
+            indicator.remove();
+        };
+        header.after(indicator);
     }
 
     // --- Sidebar Interaction ---
@@ -894,7 +933,7 @@ class FeedReader {
         if (this.refreshTimer) clearInterval(this.refreshTimer);
         const minutes = this.settings.refreshInterval || 10;
         if (minutes > 0) {
-            this.refreshTimer = setInterval(() => this.loadAllColumns(), minutes * 60000);
+            this.refreshTimer = setInterval(() => this.loadAllColumns(true), minutes * 60000);
         }
     }
 
