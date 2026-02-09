@@ -13,5 +13,23 @@ services:
       - ./server/tweets.db:/app/server/tweets.db
     environment:
       - NODE_ENV=production
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:
     # If using Postgres later:
     # - DATABASE_URL=postgresql://user:pass@db:5432/twtr_me

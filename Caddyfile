@@ -1,0 +1,8 @@
+{
+    email akhildp@gmail.com
+}
+
+# Replace twtr.me with your subdomain if needed (e.g., rss.twtr.me)
+twtr.me {
+    reverse_proxy app:3000
+}
