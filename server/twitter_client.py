@@ -37,8 +37,10 @@ def convert_to_rss(tweets, title, link, description):
                 
                 rt_header_html = f"""
                 <div class="rt-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                    <img src="{rt_avatar}" class="rt-avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />
-                    <div style="font-size: 1em; line-height: 1.2;"><strong>{rt_name}</strong> <span style="color: #888;">@{rt_screen}</span></div>
+                    <a href="https://xcancel.com/{rt_screen}" target="_blank" onclick="event.stopPropagation();" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;">
+                        <img src="{rt_avatar}" class="rt-avatar" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />
+                        <div style="font-size: 1em; line-height: 1.2;"><strong>{rt_name}</strong> <span style="color: #888;">@{rt_screen}</span></div>
+                    </a>
                 </div>
                 """
                 text = rt.text
@@ -96,7 +98,7 @@ def convert_to_rss(tweets, title, link, description):
                                 q_media_html += f'<br><img src="{m.media_url}" style="max-width: 100%; border-radius: 8px; margin-top: 5px;" />'
     
                     quote_html = f"""
-                    <div class="quoted-tweet" style="border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333;">
+                    <div class="quoted-tweet" style="border: none; border-radius: 0; padding: 0 0 0 12px; margin-top: 12px; background: none; border-left: 2px solid #333; cursor: pointer;" onclick="event.stopPropagation(); window.open('https://xcancel.com/{q_screen}/status/{q.id}', '_blank')">
                         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                             <img src="{q_avatar}" class="qt-avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;" />
                             <div style="font-size: 0.95em; line-height: 1.2;"><strong>{q_name}</strong> <span style="color: #888;">@{q_screen}</span></div>

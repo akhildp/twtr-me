@@ -458,6 +458,30 @@ class FeedReader {
                 ? `<img src="${authorAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
                 : (displaySource ? displaySource[0].toUpperCase() : '?');
 
+            // Profile Link Logic
+            let profileUrl = '#';
+            if (isTwitter) {
+                // Title is usually "@handle" from our backend
+                let handle = title.startsWith('@') ? title.substring(1) : '';
+                // Fallback: extract from link if title is weird
+                if (!handle && link.includes('/status/')) {
+                    try {
+                        const urlObj = new URL(link);
+                        const pathParts = urlObj.pathname.split('/');
+                        handle = pathParts[1]; // /handle/status/...
+                    } catch (e) { }
+                }
+                if (handle) profileUrl = `https://xcancel.com/${handle}`;
+            }
+
+            const linkedAvatarHtml = (isTwitter && profileUrl !== '#')
+                ? `<a href="${profileUrl}" target="_blank" onclick="event.stopPropagation()" style="display:block; width:100%; height:100%; text-decoration:none; color:inherit;">${avatarHtml}</a>`
+                : avatarHtml;
+
+            const linkedSourceHtml = (isTwitter && profileUrl !== '#')
+                ? `<a href="${profileUrl}" target="_blank" onclick="event.stopPropagation()" style="color:inherit; text-decoration:none;">${displaySource}</a>`
+                : displaySource;
+
             // Meta (Bottom): @handle · List Name · Time
             let displayMeta = '';
             let isRT = false;
@@ -474,9 +498,9 @@ class FeedReader {
             return `
             <article class="article-card" onclick="window.open('${link}', '_blank')">
                 <div class="article-header">
-                    <div class="article-avatar" style="${isTwitter && authorAvatar ? 'background:none;' : ''}">${avatarHtml}</div>
+                    <div class="article-avatar" style="${isTwitter && authorAvatar ? 'background:none;' : ''}">${linkedAvatarHtml}</div>
                     <div class="article-meta">
-                        <div class="article-source">${displaySource}${rtBadgeHtml}</div>
+                        <div class="article-source">${linkedSourceHtml}${rtBadgeHtml}</div>
                         <div class="article-time" title="${new Date(publishedAt).toLocaleString()}">${displayMeta} · ${this.formatTime(publishedAt)}</div>
                     </div>
                 </div>
