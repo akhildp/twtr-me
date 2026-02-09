@@ -5,13 +5,7 @@ let FEED_CATEGORIES = {};
 class FeedReader {
     constructor() {
         this.feeds = [];
-
-        // Load global article cache from localStorage (accumulates over 7 days)
-        const cachedArticles = localStorage.getItem('global_article_cache');
-        this.articles = cachedArticles ? JSON.parse(cachedArticles).map(a => ({
-            ...a,
-            time: new Date(a.time) // Restore Date objects
-        })) : [];
+        this.articles = []; // Loaded from API now
 
         this.settings = {
             refreshInterval: 10,
@@ -19,19 +13,17 @@ class FeedReader {
         };
 
         // Dashboard Columns State
-        // Default: Col 1 = Home, Col 2 = Twitter News, Col 3 = News
+        // Fixed Layout: Col 1 = All (Mix), Col 2 = Tweets, Col 3 = Dynamic
         this.columns = [
-            { id: 1, type: 'mix', title: 'Home', icon: '🏠' },
-            { id: 2, type: 'category', value: 'Twitter Lists', title: 'Twitter Mix', icon: '🐦', shuffle: true },
-            { id: 3, type: 'category', value: 'News', title: 'News', icon: '📑' }
+            { id: 1, type: 'fixed', title: 'All Feeds', icon: '🌐', endpoint: '/api/mix' },
+            { id: 2, type: 'fixed', title: 'Tweets', icon: '🐦', endpoint: '/api/tweets' },
+            { id: 3, type: 'dynamic', title: 'News', icon: '📑', endpoint: '/api/rss' }
         ];
 
         this.refreshTimer = null;
         this.loadedCategories = new Set();
-        this.refreshTimer = null;
-        this.loadedCategories = new Set();
         this.configColumnId = null;
-        this.mobileActiveColumn = 2; // Default to Twitter Lists (Column 2) on mobile
+        this.mobileActiveColumn = 2; // Default to Tweets (Column 2) on mobile
         this.theme = localStorage.getItem('theme') || 'dark';
 
         // Cache settings
@@ -41,6 +33,12 @@ class FeedReader {
 
         // Feed diversity tracking
         this.feedHistory = JSON.parse(localStorage.getItem('feed_history') || '{}');
+
+        // Infinite Scroll State
+        this.columnOffsets = { 1: 0, 2: 0, 3: 0 };
+        this.isLoadingMore = { 1: false, 2: false, 3: false };
+        this.PAGE_SIZE = 50;
+        this.hasMore = { 1: true, 2: true, 3: true };
 
         this.init();
     }
@@ -56,7 +54,7 @@ class FeedReader {
             this.startAutoRefresh();
             this.loadAllColumns();
 
-            // Initialize mobile view after a short delay to ensure DOM is ready
+            // Initialize mobile view after a short delay
             setTimeout(() => this.updateMobileView(), 100);
         }
     }
@@ -69,7 +67,7 @@ class FeedReader {
         setTimeout(() => this.loadColumn(3), 1000);
     }
 
-    // --- Feed Diversity Algorithm ---
+    // --- Feed Diversity Algorithm --- (Preserved but mostly unused now)
 
     calculateFeedWeight(feedUrl) {
         const history = this.feedHistory[feedUrl];
@@ -90,37 +88,57 @@ class FeedReader {
         return Math.max(1, recencyWeight - frequencyPenalty);
     }
 
-    weightedShuffle(feeds) {
-        if (!feeds || feeds.length === 0) return [];
+    weightedShuffle(articles, colId = null) {
+        if (!articles || articles.length === 0) return [];
 
-        // Calculate weights for each feed
-        const feedsWithWeights = feeds.map(feed => ({
-            feed,
-            weight: this.calculateFeedWeight(feed.url)
-        }));
+        const now = Date.now();
+        const perSourceCounter = {};
 
-        // Total weight for probability calculation
-        const totalWeight = feedsWithWeights.reduce((sum, item) => sum + item.weight, 0);
+        // 1. First Pass: Prepare basic data
+        const preScored = articles.map(art => {
+            const pubDate = new Date(art.published_at || art.publishedAt).getTime();
+            const ageHours = (now - pubDate) / (1000 * 60 * 60);
+            const feedUrl = art.feed_url || art.feedUrl;
+            const historicalWeight = this.calculateFeedWeight(feedUrl);
 
-        // Weighted random selection without replacement
-        const selected = [];
-        const remaining = [...feedsWithWeights];
+            return { ...art, _feedUrl: feedUrl, _ageHours: ageHours, _historicalWeight: historicalWeight };
+        });
 
-        while (remaining.length > 0 && selected.length < feeds.length) {
-            const currentTotal = remaining.reduce((sum, item) => sum + item.weight, 0);
-            let random = Math.random() * currentTotal;
+        // Sort by age initially to process in chronological order
+        preScored.sort((a, b) => a._ageHours - b._ageHours);
 
-            for (let i = 0; i < remaining.length; i++) {
-                random -= remaining[i].weight;
-                if (random <= 0) {
-                    selected.push(remaining[i].feed);
-                    remaining.splice(i, 1);
-                    break;
-                }
-            }
-        }
+        // 2. Second Pass: Apply dynamic Clustering Penalty and Diversity Boost
+        const finalScored = preScored.map(art => {
+            const source = art._feedUrl;
+            perSourceCounter[source] = (perSourceCounter[source] || 0) + 1;
 
-        return selected;
+            // CLUSTERING PENALTY: 
+            // Every repeated occurrence of the same source adds a heavy penalty (3 hours of phantom age)
+            const clusterPenalty = Math.max(0, perSourceCounter[source] - 1) * 3;
+
+            // DIVERSITY BOOST: Significant intensity for true 'Hyper-Mixed' look
+            const diversityBoost = art._historicalWeight * 2.5;
+
+            // RANDOMIZED JITTER: ±1.5 hours to break strict chronological blocks
+            const jitter = (Math.random() * 3) - 1.5;
+
+            // RSS PRIORITY BOOST: For Column 1 (Mix), prioritize RSS items significantly
+            const isTwitter = art.source_table === 'tweets' || art.feed_url?.includes('x.com') || art.feed_url?.includes('twitter');
+            const rssBoost = (colId === 1 && !isTwitter) ? 12 : 0; // 12 hours of "freshness" boost for RSS in Mix
+
+            return {
+                ...art,
+                _finalScore: art._ageHours + clusterPenalty - diversityBoost + jitter - rssBoost
+            };
+        });
+
+        // 3. Final Sort by the diversity score
+        finalScored.sort((a, b) => a._finalScore - b._finalScore);
+
+        // 4. Update history for the top 12 items shown
+        finalScored.slice(0, 12).forEach(art => this.updateFeedHistory(art._feedUrl));
+
+        return finalScored;
     }
 
     updateFeedHistory(feedUrl) {
@@ -133,180 +151,198 @@ class FeedReader {
         localStorage.setItem('feed_history', JSON.stringify(this.feedHistory));
     }
 
-    async loadColumn(colId) {
+    async loadColumn(colId, append = false) {
         const col = this.columns.find(c => c.id === colId);
         if (!col) return;
 
+        if (!append) {
+            this.columnOffsets[colId] = 0;
+            this.hasMore[colId] = true;
+        }
+
+        if (this.isLoadingMore[colId]) return;
+        this.isLoadingMore[colId] = true;
+
         const container = document.getElementById(`col-${colId}-content`);
-        if (container) {
+        const headerTitle = document.querySelector(`#col-${colId} .column-title`);
+
+        if (!append && headerTitle) {
+            headerTitle.innerHTML = `<span class="column-icon">${col.icon}</span> ${col.title}`;
+        }
+
+        if (!append && container) {
             container.innerHTML = `
                 <div class="feed-loading">
                     <div class="spinner"></div>
                     <p>Loading...</p>
                 </div>`;
+        } else if (append && container) {
+            this.showLoadingMore(colId);
         }
 
-        // Identify feeds to fetch
-        let feedsToFetch = [];
+        const apiUrl = CONFIG.apiUrl;
+        const offset = this.columnOffsets[colId];
+        console.log(`[Col ${colId}] Fetching page ${offset / this.PAGE_SIZE} from ${col.endpoint}...`);
 
-        if (col.type === 'mix') {
-            const shuffled = [...this.feeds].sort(() => 0.5 - Math.random());
-            feedsToFetch = shuffled.slice(0, 15);
-        } else if (col.type === 'category') {
-            let categoryFeeds = this.feeds.filter(f => f.category === col.value);
+        try {
+            let url = col.endpoint;
+            if (url.startsWith('/api')) {
+                url = url.replace('/api', apiUrl);
+            }
 
-            // Use weighted shuffle if shuffle is enabled
-            if (col.shuffle) {
-                feedsToFetch = this.weightedShuffle(categoryFeeds);
+            // Add pagination params
+            const sep = url.includes('?') ? '&' : '?';
+            const fetchUrl = `${url}${sep}limit=${this.PAGE_SIZE}&offset=${offset}`;
+
+            const response = await fetch(fetchUrl);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status} URL: ${fetchUrl}`);
+
+            const data = await response.json();
+            const articles = data.items || data;
+            const refreshing = data.refreshing || false;
+
+            this.hideLoadingMore(colId);
+
+            if (!articles || articles.length === 0) {
+                this.hasMore[colId] = false;
+                if (!append && container) container.innerHTML = `<div class="feed-empty"><p>No articles found.</p></div>`;
+                this.isLoadingMore[colId] = false;
+                return;
+            }
+
+            // Apply weighted shuffling for col 1 (Mix) and col 2 (Tweets)
+            let processedArticles = articles;
+            if (colId === 1 || colId === 2 || col.shuffle) {
+                processedArticles = this.weightedShuffle(articles, colId);
+            }
+
+            // Render articles
+            if (append) {
+                this.appendArticles(colId, processedArticles);
             } else {
-                feedsToFetch = categoryFeeds;
+                this.renderArticles(colId, processedArticles);
+                this.setupScrollObserver(colId);
             }
 
-            this.loadedCategories.add(col.value);
-        } else if (col.type === 'subcategory') {
-            feedsToFetch = this.feeds.filter(f => f.category === col.value && f.subcategory === col.subValue);
-            this.loadedCategories.add(col.value + ':' + col.subValue);
-        } else if (col.type === 'feed') {
-            feedsToFetch = this.feeds.filter(f => f.url === col.value);
-        }
+            this.columnOffsets[colId] += articles.length;
+            this.isLoadingMore[colId] = false;
 
-        // Update feed history for displayed feeds
-        feedsToFetch.forEach(feed => this.updateFeedHistory(feed.url));
-
-        console.log(`[Col ${colId}] Found ${feedsToFetch.length} feeds to fetch.`);
-
-        if (feedsToFetch.length === 0) {
-            if (container) container.innerHTML = `<div class="feed-empty"><p>No feeds found for this selection.</p></div>`;
-            return;
-        }
-
-        // Fetch feeds
-        const batchSize = 3;
-        let successCount = 0;
-        let blockedCount = 0;
-
-        for (let i = 0; i < feedsToFetch.length; i += batchSize) {
-            const batch = feedsToFetch.slice(i, i + batchSize);
-            const results = await Promise.allSettled(batch.map(feed => this.fetchFeed(feed)));
-
-            results.forEach(res => {
-                if (res.status === 'fulfilled') {
-                    if (res.value === 'BLOCKED') blockedCount++;
-                    else if (res.value === true) successCount++;
-                }
-            });
-
-            if (i + batchSize < feedsToFetch.length) {
-                await new Promise(r => setTimeout(r, 500));
-            }
-        }
-
-        console.log(`[Col ${colId}] ✓ ${successCount} feeds loaded | ${blockedCount} blocked`);
-
-        // Save accumulated articles to global cache
-        this.saveGlobalCache();
-
-        // Render column with all articles
-        this.renderColumn(colId);
-
-        if (successCount === 0 && blockedCount > 0) {
-            let fallbackUrl = 'https://xcancel.com';
-            let btnText = 'Open Xcancel';
-
-            if (col.type === 'feed') {
-                // Convert RSS URL to HTML URL if possible
-                // e.g. https://xcancel.com/user/rss -> https://xcancel.com/user
-                fallbackUrl = col.value.replace('/rss', '');
-                btnText = 'Open Feed';
-            } else if (col.type === 'subcategory') {
-                fallbackUrl = `https://xcancel.com/search?q=${encodeURIComponent(col.subValue)}`;
-                btnText = `Search ${col.subValue}`;
+            // Show subtle refresh indicator if backend is still fetching (only on initial load)
+            if (!append && refreshing) {
+                this.showRefreshIndicator(colId);
+                setTimeout(() => this.loadColumn(colId), 5000);
+            } else {
+                this.hideRefreshIndicator(colId);
             }
 
-            if (container) container.innerHTML = `
-               <div class="feed-empty">
-                   <div class="empty-icon">🚫</div>
-                   <h3>Feeds Blocked</h3>
-                   <p>Twitter is blocking our automated requests.</p>
-                   <button class="show-more-btn" onclick="window.open('${fallbackUrl}', '_blank')" style="margin-top:10px; background: var(--accent); color: white; border: none; padding: 8px 16px; border-radius: 20px; cursor: pointer;">
-                       ${btnText} 🔗
-                   </button>
-               </div>`;
-            return;
+        } catch (e) {
+            console.error(`Error loading column ${colId}:`, e);
+            this.isLoadingMore[colId] = false;
+            this.hideLoadingMore(colId);
+            if (!append && container) container.innerHTML = `<div class="feed-error"><p>Error loading feed.</p></div>`;
         }
+    }
+
+    async loadMore(colId) {
+        if (this.hasMore[colId] && !this.isLoadingMore[colId]) {
+            console.log(`[Col ${colId}] Loading more content...`);
+            await this.loadColumn(colId, true);
+        }
+    }
+
+    setupScrollObserver(colId) {
+        const container = document.getElementById(`col-${colId}-content`);
+        if (!container) return;
+
+        // Cleanup old observer if exists
+        if (container._observer) container._observer.disconnect();
+
+        const observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) {
+                this.loadMore(colId);
+            }
+        }, { root: container.parentElement, threshold: 0.1, rootMargin: '400px' });
+
+        // Add a sentinel element at the bottom
+        let sentinel = container.querySelector('.scroll-sentinel');
+        if (!sentinel) {
+            sentinel = document.createElement('div');
+            sentinel.className = 'scroll-sentinel';
+            sentinel.style.height = '1px';
+            container.appendChild(sentinel);
+        }
+        observer.observe(sentinel);
+        container._observer = observer;
+    }
+
+    showLoadingMore(colId) {
+        const container = document.getElementById(`col-${colId}-content`);
+        if (!container) return;
+        let loader = container.querySelector('.loading-more');
+        if (!loader) {
+            loader = document.createElement('div');
+            loader.className = 'loading-more';
+            loader.innerHTML = `<div class="spinner-small"></div> Loading more articles...`;
+            container.appendChild(loader);
+        }
+    }
+
+    hideLoadingMore(colId) {
+        const container = document.getElementById(`col-${colId}-content`);
+        if (!container) return;
+        const loader = container.querySelector('.loading-more');
+        if (loader) loader.remove();
+
+        // Re-append sentinel to be at the very bottom
+        const sentinel = container.querySelector('.scroll-sentinel');
+        if (sentinel) container.appendChild(sentinel);
+    }
+
+    showRefreshIndicator(colId) {
+        const header = document.querySelector(`#col-${colId} .column-header`);
+        if (!header) return;
+
+        let indicator = header.querySelector('.refresh-indicator');
+        if (!indicator) {
+            indicator = document.createElement('div');
+            indicator.className = 'refresh-indicator';
+            indicator.innerHTML = `<div class="spinner-small"></div> Checking for new posts...`;
+            header.after(indicator);
+        }
+    }
+
+    hideRefreshIndicator(colId) {
+        const header = document.querySelector(`#col-${colId} .column-header`);
+        if (!header) return;
+        const indicator = header.parentElement.querySelector('.refresh-indicator');
+        if (indicator) indicator.remove();
     }
 
     // --- Sidebar Interaction ---
 
-    loadColumnForSidebar(type, value, extra) {
-        // Always target Column 3 for sidebar clicks
-        const colIndex = 2; // Index 2 is Column 3
-        const colId = 3;
+    // Update Dynamic Column (3)
+    updateColumn3(title, endpoint) {
+        const colIndex = 2; // Index 2 is Column 3 (0-based in array)
+        if (colIndex !== -1) {
+            this.columns[colIndex].title = title;
+            this.columns[colIndex].endpoint = endpoint;
+            this.loadColumn(3);
 
-        this.columns[colIndex].type = type;
-        this.columns[colIndex].value = value;
-
-        if (type === 'subcategory') {
-            // value = Category (Twitter), extra = Subcategory (AI)
-            this.columns[colIndex].subValue = extra;
-            this.columns[colIndex].title = `${value} ${extra}`;
-            this.columns[colIndex].icon = '🐦';
-        } else if (type === 'category') {
-            this.columns[colIndex].subValue = null;
-            this.columns[colIndex].title = value;
-            this.columns[colIndex].icon = '📂';
-        } else if (type === 'feed') {
-            this.columns[colIndex].subValue = null;
-            this.columns[colIndex].title = extra || 'Feed';
-            this.columns[colIndex].icon = '🔗';
-        }
-
-        this.saveColumnConfigLink();
-        this.loadColumn(colId);
-
-        // Mobile: Switch to column 3 and close sidebar
-        if (this.isMobile()) {
-            this.mobileActiveColumn = colId;
-            this.updateMobileView();
-            document.getElementById('sidebar').classList.remove('open');
+            // On mobile, switch to view this column
+            if (this.isMobile()) {
+                this.mobileActiveColumn = 3;
+                this.updateMobileView();
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar) sidebar.classList.remove('open');
+            }
         }
     }
 
     // --- Rendering ---
 
-    renderColumn(colId) {
-        const col = this.columns.find(c => c.id === colId);
+    renderArticles(colId, colArticles) {
         const container = document.getElementById(`col-${colId}-content`);
-        const titleEl = document.getElementById(`col-${colId}-title`);
         if (!container) return;
-
-        if (colId !== 1 && titleEl) {
-            titleEl.querySelector('h3').textContent = col.title;
-            titleEl.querySelector('.column-icon').textContent = col.icon || '📑';
-        }
-
-        let colArticles = [...this.articles];
-
-        // 1. Filter based on column type
-        if (col.type === 'mix') {
-            // Mix: include everything (no filter needed yet)
-        } else if (col.type === 'category') {
-            colArticles = colArticles.filter(a => a.category === col.value);
-        } else if (col.type === 'subcategory') {
-            colArticles = colArticles.filter(a => a.category === col.value && a.subcategory === col.subValue);
-        } else if (col.type === 'feed') {
-            colArticles = colArticles.filter(a => a.feedUrl === col.value);
-        }
-
-        // 2. Sort or Shuffle
-        if (col.type === 'mix' || col.shuffle) {
-            colArticles.sort(() => 0.5 - Math.random());
-        } else {
-            colArticles.sort((a, b) => b.time - a.time);
-        }
-
-        // 3. Limit
-        // Show all articles (no limit for accumulative caching)
 
         if (colArticles.length === 0) {
             container.innerHTML = `
@@ -318,59 +354,96 @@ class FeedReader {
             return;
         }
 
-        container.innerHTML = colArticles.map((article, index) => {
-            const contentId = `col-${colId}-article-${index}`;
+        container.innerHTML = this.generateArticlesHtml(colId, colArticles);
+    }
+
+    appendArticles(colId, colArticles) {
+        const container = document.getElementById(`col-${colId}-content`);
+        if (!container) return;
+
+        const html = this.generateArticlesHtml(colId, colArticles, container.querySelectorAll('.article-card').length);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = html;
+
+        while (tempDiv.firstChild) {
+            container.insertBefore(tempDiv.firstChild, container.querySelector('.loading-more') || container.querySelector('.scroll-sentinel'));
+        }
+    }
+
+    generateArticlesHtml(colId, colArticles, startIndex = 0) {
+        return colArticles.map((article, index) => {
+            const contentId = `col-${colId}-article-${startIndex + index}`;
 
             // Create temp div to get text-only length (exclude HTML tags)
             const tempDiv = document.createElement('div');
-            tempDiv.innerHTML = article.content;
+            tempDiv.innerHTML = article.content || ''; // Handle null content
             const textContent = tempDiv.textContent || tempDiv.innerText || '';
-            const isLong = textContent.length > 280; // Increased threshold, based on text not HTML
+            const isLong = textContent.length > 280;
 
-            const isTwitter = article.category === 'Twitter Lists' || article.feedUrl.includes('twitter.com') || article.feedUrl.includes('x.com');
+            // API returns snake_case keys: feed_url, image_url, published_at
+            // Handle both snake_case (API) and camelCase (Legacy/Client-side) just in case
+            const feedUrl = article.feed_url || article.feedUrl || '';
+            const imageUrl = article.image_url || article.imageUrl;
+            const publishedAt = article.published_at || article.time;
+            const feedName = article.feed_name || article.feedName || 'Unknown Feed';
+            const title = article.title || '';
+            const link = article.link || '#';
+            const author = article.author || '';
+            const authorAvatar = article.author_avatar || article.authorAvatar;
+
+            const isTwitter = (article.category === 'Twitter Lists') ||
+                (feedUrl && (feedUrl.includes('twitter.com') || feedUrl.includes('x.com') || feedUrl.includes('nitter')));
 
             // Display Logic
             // Source (Top): Display Name (Yann LeCun) for Twitter, Feed Name for others
-            const displaySource = isTwitter ? (article.authorName || article.title) : article.feedName;
+            const displaySource = isTwitter ? (author || title) : feedName;
 
             // Avatar: Real Avatar for Twitter, Letter for others
-            const avatarHtml = (isTwitter && article.authorAvatar)
-                ? `<img src="${article.authorAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
-                : displaySource[0].toUpperCase();
+            const avatarHtml = (isTwitter && authorAvatar)
+                ? `<img src="${authorAvatar}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`
+                : (displaySource ? displaySource[0].toUpperCase() : '?');
 
             // Meta (Bottom): @handle · List Name · Time
             let displayMeta = '';
+            let isRT = false;
             if (isTwitter) {
-                // article.title is @handle from RSS
-                displayMeta = `${article.title} · ${article.feedName}`;
+                // Check if content has RT indicators
+                isRT = (article.content || '').includes('class="rt-header"') || (article.content || '').match(/^RT\s+@\w+:/i);
+                displayMeta = `${title} · ${feedName}`;
             } else {
-                displayMeta = article.subcategory ? article.category + ' · ' + article.subcategory : article.category;
+                displayMeta = article.subcategory ? `${article.category} · ${article.subcategory}` : (article.category || feedName);
             }
 
+            const rtBadgeHtml = isRT ? `<span class="rt-status" style="color: var(--text-muted); font-size: 13px; font-weight: normal; margin-left: 8px; display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;">🔁 Retweeted</span>` : '';
+
             return `
-            <article class="article-card" onclick="window.open('${article.link}', '_blank')">
+            <article class="article-card" onclick="window.open('${link}', '_blank')">
                 <div class="article-header">
-                    <div class="article-avatar" style="${isTwitter && article.authorAvatar ? 'background:none;' : ''}">${avatarHtml}</div>
+                    <div class="article-avatar" style="${isTwitter && authorAvatar ? 'background:none;' : ''}">${avatarHtml}</div>
                     <div class="article-meta">
-                        <div class="article-source">${displaySource}</div>
-                        <div class="article-time">${displayMeta} · ${this.formatTime(article.time)}</div>
+                        <div class="article-source">${displaySource}${rtBadgeHtml}</div>
+                        <div class="article-time" title="${new Date(publishedAt).toLocaleString()}">${displayMeta} · ${this.formatTime(publishedAt)}</div>
                     </div>
                 </div>
                 
-                ${!isTwitter ? `<div class="article-title">${article.title}</div>` : ''}
+                ${!isTwitter && title ? `<div class="article-title">${title}</div>` : ''}
                 
-                ${article.imageUrl ? `
+                ${imageUrl ? `
                     <div class="article-media">
-                        <img src="${article.imageUrl}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+                        <img src="${imageUrl}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
                     </div>
                 ` : ''}
 
 
-                <div id="${contentId}" class="article-content ${isLong ? 'truncated' : ''}">${this.parseTwitterContent(article.content, article.imageUrl)}</div>
+                <div id="${contentId}" class="article-content ${isLong ? 'truncated' : ''}">${this.parseTwitterContent(article.content, imageUrl)}</div>
                 
                 <div class="article-actions">
+                    <div class="article-stats">
+                        ${isTwitter && article.favorite_count ? `<span class="stat-item" title="Likes">❤️ ${article.favorite_count}</span>` : ''}
+                        ${isTwitter && article.retweet_count ? `<span class="stat-item" title="Retweets">🔁 ${article.retweet_count}</span>` : ''}
+                    </div>
                     ${isLong ? `<button class="show-more-btn" onclick="event.stopPropagation(); app.toggleArticle('${contentId}', this)">Show more</button>` : '<div></div>'}
-                    <button class="article-link" onclick="event.stopPropagation(); app.copyLink('${article.link}')" title="Copy link">🔗</button>
+                    <button class="article-link" onclick="event.stopPropagation(); app.copyLink('${link}')" title="Copy link">🔗</button>
                 </div>
             </article>
             `;
@@ -447,13 +520,16 @@ class FeedReader {
             if (type === 'subcategory') {
                 this.columns[colIndex].title = `${val} ${sub}`;
                 this.columns[colIndex].icon = '🐦';
+                this.columns[colIndex].endpoint = (val === 'Twitter' || val === 'Twitter Lists') ? `${CONFIG.apiUrl}/tweets` : `${CONFIG.apiUrl}/rss`;
             } else if (type === 'category') {
                 this.columns[colIndex].title = val;
-                this.columns[colIndex].icon = '📂';
-            } else {
+                this.columns[colIndex].icon = (val === 'Twitter Lists' || val === 'Twitter') ? '🐦' : '📂';
+                this.columns[colIndex].endpoint = (val === 'Twitter' || val === 'Twitter Lists') ? `${CONFIG.apiUrl}/tweets` : `${CONFIG.apiUrl}/rss`;
+            } else if (type === 'feed') {
                 const feed = this.feeds.find(f => f.url === val);
                 this.columns[colIndex].title = feed ? feed.name : 'Feed';
                 this.columns[colIndex].icon = '🔗';
+                this.columns[colIndex].endpoint = `${CONFIG.apiUrl}/content?feed_url=${encodeURIComponent(val)}`;
             }
 
             this.saveColumnConfigLink();
@@ -474,46 +550,41 @@ class FeedReader {
 
         // Migration: Force update Col 2 if it's still "Twitter News"
         if (this.columns[1] && this.columns[1].value === 'Twitter' && this.columns[1].subValue === 'News') {
-            this.columns[1] = { id: 2, type: 'category', value: 'Twitter', title: 'Twitter Feed', icon: '🐦' };
-            this.saveColumnConfig();
+            this.columns[1] = {
+                id: 2, type: 'category', value: 'Twitter', title: 'Twitter Feed', icon: '🐦',
+                endpoint: `${CONFIG.apiUrl}/tweets`
+            };
+            this.saveColumnConfigLink();
         }
 
-        // Migration 2: Switch "Twitter" or "News" (default) in Col 2 to "Twitter List" feed
-        if (this.columns[1]) {
-            const isLegacyTwitter = this.columns[1].value === 'Twitter';
-            const isLegacyNews = this.columns[1].value === 'News'; // If user reset or never changed default
-
-            if (isLegacyTwitter || isLegacyNews) {
-                this.columns[1] = {
-                    id: 2,
-                    type: 'feed',
-                    value: 'https://x.com/i/lists/1614585113991340032',
-                    title: 'My Tech Feed',
-                    icon: '🐦'
-                };
-                this.saveColumnConfig();
-            }
-        }
-
-        // Migration 3: Force update to new 3-column layout
-        // Col 2: Twitter List (Shuffled)
-        if (this.columns[1]) {
+        // Migration 2: Column 2 default to Twitter List
+        if (this.columns[1] && (this.columns[1].value === 'Twitter' || this.columns[1].value === 'News' || !this.columns[1].endpoint)) {
             this.columns[1] = {
                 id: 2,
                 type: 'category',
                 value: 'Twitter Lists',
                 title: 'Twitter Mix',
                 icon: '🐦',
-                shuffle: true
+                shuffle: true,
+                endpoint: `${CONFIG.apiUrl}/tweets`
             };
-            this.saveColumnConfig();
+            this.saveColumnConfigLink();
         }
 
-        // Migration 4: Ensure Column 3 defaults to News (fixing stuck state)
-        if (this.columns[2] && this.columns[2].value !== 'News' && !localStorage.getItem('col3_fixed')) {
-            this.columns[2] = { id: 3, type: 'category', value: 'News', title: 'News', icon: '📑' };
-            this.saveColumnConfig();
+        // Migration 4: Ensure Column 3 defaults to News and has endpoint
+        if (this.columns[2] && (!this.columns[2].endpoint || (this.columns[2].value !== 'News' && !localStorage.getItem('col3_fixed')))) {
+            this.columns[2] = {
+                id: 3, type: 'category', value: 'News', title: 'News', icon: '📑',
+                endpoint: `${CONFIG.apiUrl}/rss`
+            };
+            this.saveColumnConfigLink();
             localStorage.setItem('col3_fixed', 'true');
+        }
+
+        // Migration 5: Ensure Col 1 has endpoint
+        if (this.columns[0] && !this.columns[0].endpoint) {
+            this.columns[0].endpoint = `${CONFIG.apiUrl}/mix`;
+            this.saveColumnConfigLink();
         }
     }
 
@@ -521,179 +592,43 @@ class FeedReader {
 
     // --- Cache Management ---
 
-    saveGlobalCache() {
-        try {
-            // Prune old articles before saving
-            this.pruneOldArticles();
-
-            // Save to localStorage
-            localStorage.setItem('global_article_cache', JSON.stringify(this.articles));
-            console.log(`💾 Saved ${this.articles.length} articles to global cache`);
-        } catch (e) {
-            console.warn('Failed to save global cache:', e);
-        }
-    }
-
-    pruneOldArticles() {
-        const cutoffDate = new Date(Date.now() - (this.CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000));
-        const beforeCount = this.articles.length;
-
-        this.articles = this.articles.filter(article => article.time >= cutoffDate);
-
-        const prunedCount = beforeCount - this.articles.length;
-        if (prunedCount > 0) {
-            console.log(`🗑️ Pruned ${prunedCount} articles older than ${this.CACHE_MAX_AGE_DAYS} days`);
-        }
-    }
-
-    getCacheKey(feedUrl) {
-        // Simple hash for cache key
-        return `rss_cache_${this.CACHE_VERSION}_${btoa(feedUrl).replace(/[^a-zA-Z0-9]/g, '')}`;
-    }
-
-    saveToCache(feedUrl, articles) {
-        try {
-            // Filter articles to only those from the last 7 days
-            const cutoffDate = new Date(Date.now() - (this.CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000));
-            const recentArticles = articles.filter(article => article.time >= cutoffDate);
-
-            const cacheData = {
-                articles: recentArticles,
-                timestamp: Date.now(),
-                feedUrl: feedUrl
-            };
-            localStorage.setItem(this.getCacheKey(feedUrl), JSON.stringify(cacheData));
-        } catch (e) {
-            console.warn('Failed to save cache:', e);
-        }
-    }
-
-    loadFromCache(feedUrl) {
-        try {
-            const cacheKey = this.getCacheKey(feedUrl);
-            const cached = localStorage.getItem(cacheKey);
-
-            if (!cached) return null;
-
-            const cacheData = JSON.parse(cached);
-            const age = Date.now() - cacheData.timestamp;
-
-            // Return cache if within TTL, null if expired
-            if (age < this.CACHE_TTL) {
-                return cacheData.articles;
-            }
-
-            // Cache expired - still return it for stale-while-revalidate
-            return cacheData.articles;
-        } catch (e) {
-            console.warn('Failed to load cache:', e);
-            return null;
-        }
-    }
-
-    isCacheFresh(feedUrl) {
-        try {
-            const cacheKey = this.getCacheKey(feedUrl);
-            const cached = localStorage.getItem(cacheKey);
-
-            if (!cached) return false;
-
-            const cacheData = JSON.parse(cached);
-            const age = Date.now() - cacheData.timestamp;
-
-            return age < this.CACHE_TTL;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    mergeArticles(cachedArticles, freshArticles) {
-        // Create a map of existing articles by ID
-        const articleMap = new Map();
-
-        // Add cached articles first
-        cachedArticles.forEach(article => {
-            articleMap.set(article.id, article);
-        });
-
-        // Add/update with fresh articles (newer takes precedence)
-        freshArticles.forEach(article => {
-            articleMap.set(article.id, article);
-        });
-
-        // Filter to only articles from last 7 days
-        const cutoffDate = new Date(Date.now() - (this.CACHE_MAX_AGE_DAYS * 24 * 60 * 60 * 1000));
-
-        // Convert back to array, filter by date, and sort by time (newest first)
-        return Array.from(articleMap.values())
-            .filter(article => article.time >= cutoffDate)
-            .sort((a, b) => b.time - a.time);
-    }
-
     async fetchFeed(feed) {
-        // Try to load from cache first
-        const cachedArticles = this.loadFromCache(feed.url);
-        const isFresh = this.isCacheFresh(feed.url);
-
-        // If cache is fresh, use it and skip fetch
-        if (isFresh && cachedArticles) {
-            cachedArticles.forEach(article => {
-                if (!this.articles.find(a => a.id === article.id)) {
-                    this.articles.push(article);
-                }
-            });
-            console.log(`✓ ${feed.name} (from cache)`);
-            return true;
-        }
-
-        // If we have stale cache, add it to articles immediately (for instant display)
-        if (cachedArticles && cachedArticles.length > 0) {
-            cachedArticles.forEach(article => {
-                if (!this.articles.find(a => a.id === article.id)) {
-                    this.articles.push(article);
-                }
-            });
-        }
-
-        // Use proxy from config (auto-detects dev/prod environment)
-        const proxyUrl = `${CONFIG.proxyUrl}?url=${encodeURIComponent(feed.url)}`;
+        const apiUrl = CONFIG.apiUrl;
+        const url = `${apiUrl}/tweets?feed_url=${encodeURIComponent(feed.url)}&limit=50`;
 
         try {
-            const response = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+            const response = await fetch(url);
             if (!response.ok) {
-                console.warn(`✗ ${feed.name} (${feed.url}): ${response.status}`);
-                return cachedArticles ? true : false; // Return success if we have cache
-            }
-
-            const text = await response.text();
-
-            // Check for blocking messages
-            if (text.includes('whitelist') || text.includes('Cloudflare') || text.includes('Attention Required')) {
-                console.warn(`✗ ${feed.name}: BLOCKED via Whitelist/Cloudflare`);
-                return 'BLOCKED';
-            }
-
-            // Basic validation
-            if ((!text.includes('<rss') && !text.includes('<feed') && !text.includes('<rdf')) ||
-                (!text.includes('<item') && !text.includes('<entry'))) {
-                console.warn(`✗ ${feed.name}: Invalid XML/No items found.`);
+                console.warn(`✗ ${feed.name}: API Error ${response.status}`);
                 return false;
             }
 
-            const articles = this.parseRSS(text, feed);
-            if (articles.length === 0) return false;
+            const tweets = await response.json();
 
-            articles.forEach(article => {
-                // Add subcategory to article object if present
-                article.subcategory = feed.subcategory;
+            if (tweets.length === 0) return false;
 
+            tweets.forEach(t => {
+                // Map API response to internal article format
+                const article = {
+                    id: t.id,
+                    title: t.title || 'Untitled',
+                    content: t.content || '',
+                    link: t.link,
+                    time: new Date(t.published_at), // Convert string to Date
+                    authorName: t.author,
+                    feedName: t.feed_name || feed.name,
+                    feedUrl: t.feed_url || feed.url,
+                    imageUrl: t.image_url,
+                    category: feed.category,
+                    subcategory: feed.subcategory,
+                    authorAvatar: t.author_avatar // Map from DB/API
+                };
+
+                // Deduplicate
                 if (!this.articles.find(a => a.id === article.id)) {
                     this.articles.push(article);
                 }
             });
-
-            // Save fresh articles to cache
-            this.saveToCache(feed.url, articles);
 
             return true;
         } catch (error) {
@@ -702,58 +637,7 @@ class FeedReader {
         }
     }
 
-    parseRSS(xmlText, feed) {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(xmlText, 'text/xml');
-        let items = doc.querySelectorAll('item');
-        if (items.length === 0) items = doc.querySelectorAll('entry');
-
-        return Array.from(items).slice(0, 10).map((item, index) => {
-            let title = item.querySelector('title')?.textContent || '';
-
-            // Try to get full HTML content from description/summary/content
-            // Some RSS feeds use CDATA for HTML content, others use encoded HTML
-            let descriptionNode = item.querySelector('description') || item.querySelector('summary') || item.querySelector('content');
-            let description = '';
-
-            if (descriptionNode) {
-                // Try innerHTML first (preserves CDATA content), fallback to textContent
-                description = descriptionNode.innerHTML || descriptionNode.textContent || '';
-                // Remove CDATA wrappers if present
-                description = description.replace(/^\s*<!\[CDATA\[/, '').replace(/\]\]>\s*$/, '');
-            }
-
-            let link = item.querySelector('link')?.textContent || item.querySelector('link')?.getAttribute('href') || '';
-            let pubDate = item.querySelector('pubDate')?.textContent || item.querySelector('published')?.textContent || item.querySelector('updated')?.textContent || '';
-
-            // Custom Twitter Tags
-            let authorName = item.getElementsByTagName('author_name')[0]?.textContent || '';
-            let authorAvatar = item.getElementsByTagName('author_avatar')[0]?.textContent || '';
-
-            let content = description; // Keep HTML for images and quotes
-
-            let imageUrl = null;
-            const imgMatch = description.match(/<img[^>]+src="([^"]+)"/);
-            if (imgMatch) imageUrl = imgMatch[1];
-            const mediaContent = item.querySelector('content[url], thumbnail[url], enclosure[url]');
-            if (mediaContent) imageUrl = mediaContent.getAttribute('url');
-
-            return {
-                id: `${feed.url}-${index}`,
-                feedName: feed.name,
-                feedUrl: feed.url,
-                category: feed.category,
-                subcategory: feed.subcategory,
-                title,
-                authorName,
-                authorAvatar,
-                content,
-                link,
-                time: pubDate ? new Date(pubDate) : new Date(),
-                imageUrl
-            };
-        });
-    }
+    // --- Sidebar Interaction ---
 
     markAsRead(id) {
         this.readArticles.add(id);
@@ -795,25 +679,15 @@ class FeedReader {
         const div = document.createElement('div');
         div.innerHTML = content;
 
-        // Detect and handle Retweets (RT @username: ...)
-        const textContent = div.textContent || div.innerText;
-        const rtMatch = textContent.match(/^RT\s+@(\w+):\s*/i);
-
-        if (rtMatch) {
-            // It's a Retweet - add visual indicator
-            const rtIndicator = document.createElement('div');
-            rtIndicator.className = 'rt-indicator';
-            rtIndicator.innerHTML = `<span>🔁 Retweeted from @${rtMatch[1]}</span>`;
-
-            // Remove the "RT @username:" prefix from content
-            const firstTextNode = div.querySelector('p') || div;
-            if (firstTextNode) {
-                firstTextNode.textContent = firstTextNode.textContent.replace(/^RT\s+@\w+:\s*/i, '');
+        // Safely remove legacy "RT @username:" prefix without destroying HTML
+        const treeWalker = document.createTreeWalker(div, NodeFilter.SHOW_TEXT);
+        let node;
+        while (node = treeWalker.nextNode()) {
+            if (node.nodeValue && node.nodeValue.trim().match(/^RT\s+@\w+:\s*/i)) {
+                node.nodeValue = node.nodeValue.replace(/^RT\s+@\w+:\s*/i, '');
+                break; // Only match the first one
             }
-
-            div.insertBefore(rtIndicator, div.firstChild);
         }
-
         // Find blockquotes (Quote Tweets in Nitter RSS)
         const blockquotes = div.querySelectorAll('blockquote');
 
@@ -831,20 +705,36 @@ class FeedReader {
             });
         }
 
-        // Remove duplicate top-level images (already shown in article-media)
+        // Remove duplicate images (already shown in article-media)
         if (mainImageUrl) {
-            const topLevelImages = Array.from(div.querySelectorAll(':scope > img, :scope > p > img'));
-            topLevelImages.forEach(img => {
-                // Only remove if it matches the main image
-                if (img.src === mainImageUrl || img.src.includes(mainImageUrl)) {
+            const allContentImages = Array.from(div.querySelectorAll('img'));
+            allContentImages.forEach(img => {
+                // Check if this image matches the main one (handling relative/absolute mismatches)
+                const currentImgSrc = img.src || img.getAttribute('src');
+                if (!currentImgSrc) return;
+
+                // Compare filenames or paths if full URL match fails
+                const isMatch = currentImgSrc === mainImageUrl ||
+                    currentImgSrc.includes(mainImageUrl) ||
+                    mainImageUrl.includes(currentImgSrc) ||
+                    (currentImgSrc.split('/').pop() === mainImageUrl.split('/').pop() && mainImageUrl.split('/').pop().length > 5);
+
+                if (isMatch) {
                     img.remove();
                 }
             });
         }
 
         // Style all remaining images
-        const allImages = div.querySelectorAll('img:not(.quoted-image)');
+        // Exclude images that are part of the RT header or Quoted Tweet structure
+        // This handles both new tweets (with classes) and old tweets (without classes but inside structure)
+        const allImages = div.querySelectorAll('img:not(.quoted-image):not(.rt-avatar):not(.qt-avatar)');
         allImages.forEach(img => {
+            // explicit check for parent containers to be safe (selector :not has limits with ancestors)
+            if (img.closest('.rt-header') || img.closest('.quoted-tweet')) {
+                return;
+            }
+
             img.classList.add('content-image');
             img.setAttribute('loading', 'lazy');
             img.setAttribute('onerror', "this.style.display='none'");
@@ -861,22 +751,55 @@ class FeedReader {
     }
 
     formatTime(date) {
-        if (!(date instanceof Date) || isNaN(date)) return '';
+        if (!date) return '';
+
+        let d;
+        if (date instanceof Date) {
+            d = date;
+        } else {
+            let dateStr = String(date);
+            // Handle SQLite format "2026-02-08 21:47:38" -> force UTC
+            if (dateStr.length === 19 && dateStr.includes(' ') && !dateStr.includes('T')) {
+                dateStr = dateStr.replace(' ', 'T') + 'Z';
+            }
+            d = new Date(dateStr);
+        }
+        if (isNaN(d)) return '';
+
         const now = new Date();
-        const diff = now - date;
+        const diff = now - d;
         const minutes = Math.floor(diff / 60000);
         const hours = Math.floor(diff / 3600000);
         const days = Math.floor(diff / 86400000);
+
         if (minutes < 1) return 'now';
-        if (minutes < 60) return `${minutes}m`;
-        if (hours < 24) return `${hours}h`;
-        return `${days}d`;
+        if (minutes < 60) return `${minutes}m ago`;
+        if (hours < 24) return `${hours}h ago`;
+        if (days < 7) return `${days}d ago`;
+
+        // Return short date for older items
+        return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
     }
 
     loadSettings() {
         const saved = localStorage.getItem('rss_settings');
         if (saved) {
             this.settings = { ...this.settings, ...JSON.parse(saved) };
+        }
+    }
+
+    async triggerManualRefresh() {
+        this.showToast('Refreshing all feeds in background...', 'info');
+
+        try {
+            // Trigger background refresh on server
+            fetch(`${CONFIG.apiUrl}/refresh/all`, { method: 'POST' })
+                .catch(err => console.error('Refresh trigger failed:', err));
+
+            // Reload columns to show loading state and poll for new data
+            this.loadAllColumns();
+        } catch (e) {
+            console.error('Manual refresh error:', e);
         }
     }
 
@@ -911,7 +834,7 @@ class FeedReader {
             searchBtn.addEventListener('click', () => this.performSearch());
         }
 
-        document.getElementById('refreshBtn').addEventListener('click', () => this.loadAllColumns());
+        document.getElementById('refreshBtn').addEventListener('click', () => this.triggerManualRefresh());
         document.getElementById('themeToggleBtn').addEventListener('click', () => this.toggleTheme());
         document.getElementById('settingsBtn').addEventListener('click', () => this.openSettings());
         document.getElementById('addAccountBtn').addEventListener('click', () => this.openAddFeed());
@@ -965,65 +888,70 @@ class FeedReader {
     }
 
     renderSidebar() {
-        const container = document.getElementById('accountsList');
+        const sidebar = document.getElementById('accountsList');
+        if (!sidebar) {
+            console.error('Sidebar element #accountsList not found!');
+            return;
+        }
+        console.log('Rendering sidebar with categories:', Object.keys(FEED_CATEGORIES));
+
         let html = '';
 
-        const categories = Object.keys(FEED_CATEGORIES).sort((a, b) => {
-            if (a === 'Twitter') return -1;
-            if (b === 'Twitter') return 1;
-            return a.localeCompare(b);
-        });
+        Object.keys(FEED_CATEGORIES).forEach(category => {
+            const feeds = FEED_CATEGORIES[category];
+            const subcategories = [...new Set(feeds.map(f => f.subcategory).filter(Boolean))];
 
-        for (const category of categories) {
-            const feedsInCategory = FEED_CATEGORIES[category];
             html += `
-                <div class="category-group">
-                    <div class="category-header" onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'block' ? 'none' : 'block'">
-                        <span class="category-name">▶ ${category}</span>
-                        <span class="category-count">${feedsInCategory.length}</span>
+                <div class="sidebar-section">
+                    <div class="category-header collapsed" onclick="app.toggleCategory(this)">
+                        <div class="category-name">
+                            <span class="category-icon">📁</span>
+                            ${category}
+                        </div>
+                        <span class="category-chevron">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
                     </div>
-                    <div class="category-feeds" style="display:none;">
+                    <div class="sidebar-links">
             `;
 
-            if (category === 'Twitter') {
-                // Group by subcategory
-                const subcats = {};
-                feedsInCategory.forEach(f => {
-                    const sub = f.subcategory || 'Other';
-                    if (!subcats[sub]) subcats[sub] = [];
-                    subcats[sub].push(f);
-                });
+            if (subcategories.length > 0) {
+                subcategories.forEach(sub => {
+                    const subFeeds = feeds.filter(f => f.subcategory === sub);
 
-                Object.keys(subcats).sort().forEach(sub => {
-                    html += `
-                        <div class="feed-item" onclick="app.loadColumnForSidebar('subcategory', 'Twitter', '${sub}')" style="padding-left: 20px; font-weight: bold; color: var(--text-primary);">
-                             ${sub}
-                        </div>
-                        ${subcats[sub].map(feed => `
-                            <div class="feed-item" onclick="app.loadColumnForSidebar('feed', '${feed.url}', '${feed.name}')" style="padding-left: 30px;">
-                                <span class="feed-name">${feed.name}</span>
-                            </div>
-                        `).join('')}
-                     `;
-                });
+                    html += `<div class="sidebar-subheader">${sub}</div>`;
 
+                    subFeeds.forEach(feed => {
+                        html += `
+                            <a href="#" class="sidebar-link" onclick="event.preventDefault(); app.updateColumn3('${feed.name}', '/api/content?feed_url=${encodeURIComponent(feed.url)}')">
+                                ${feed.name}
+                            </a>
+                        `;
+                    });
+                });
             } else {
-                html += `
-                    <div class="feed-item" onclick="app.loadColumnForSidebar('category', '${category}')" style="font-style: italic; color: var(--accent);">
-                        View All ${category}
-                    </div>
-                `;
-
-                html += feedsInCategory.map(feed => `
-                    <div class="feed-item" onclick="app.loadColumnForSidebar('feed', '${feed.url}', '${feed.name}')">
-                        <span class="feed-name">${feed.name}</span>
-                    </div>
-                `).join('');
+                feeds.forEach(feed => {
+                    html += `
+                        <a href="#" class="sidebar-link" onclick="event.preventDefault(); app.updateColumn3('${feed.name}', '/api/content?feed_url=${encodeURIComponent(feed.url)}')">
+                            ${feed.name}
+                        </a>
+                    `;
+                });
             }
 
-            html += `</div></div>`;
-        }
-        container.innerHTML = html;
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        sidebar.innerHTML = html;
+    }
+
+    toggleCategory(element) {
+        element.classList.toggle('collapsed');
     }
 
     // Modals
@@ -1085,7 +1013,8 @@ class FeedReader {
 
     updateThemeIcon() {
         const icon = this.theme === 'dark' ? '☀️' : '🌙';
-        document.getElementById('themeToggleBtn').textContent = icon;
+        const btn = document.getElementById('themeToggleBtn');
+        if (btn) btn.textContent = icon;
     }
 
     // --- Stats Dashboard ---

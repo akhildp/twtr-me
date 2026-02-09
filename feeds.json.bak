@@ -1,0 +1,472 @@
+{
+    "Twitter Lists": [
+        {
+            "name": "My Tech Feed",
+            "url": "https://x.com/i/lists/1614585113991340032",
+            "subcategory": "Mixed"
+        },
+        {
+            "name": "AI & ML",
+            "url": "https://x.com/i/lists/YOUR_AI_LIST_ID_HERE",
+            "subcategory": "AI"
+        },
+        {
+            "name": "FinTwit / Markets",
+            "url": "https://x.com/i/lists/1668655026263277570",
+            "subcategory": "Finance"
+        },
+        {
+            "name": "Geopolitics Core",
+            "url": "https://x.com/i/lists/1254031884251774982",
+            "subcategory": "Geopolitics"
+        },
+        {
+            "name": "CT Essentials",
+            "url": "https://x.com/i/lists/1519624419487932416",
+            "subcategory": "Crypto"
+        },
+        {
+            "name": "Top CT Investors",
+            "url": "https://x.com/i/lists/2009279416128479613",
+            "subcategory": "Finance"
+        },
+        {
+            "name": "Angels & VCs",
+            "url": "https://x.com/i/lists/1729126188927394040",
+            "subcategory": "Startups"
+        },
+        {
+            "name": "Science (Physics/Math/Space)",
+            "url": "https://x.com/i/lists/1510243728203698181",
+            "subcategory": "Science"
+        },
+        {
+            "name": "India News",
+            "url": "https://x.com/i/lists/1579472673297469440",
+            "subcategory": "India"
+        },
+        {
+            "name": "India Left",
+            "url": "https://x.com/i/lists/1131746026304544769",
+            "subcategory": "India"
+        },
+        {
+            "name": "India RW",
+            "url": "https://x.com/i/lists/1658795138397900801",
+            "subcategory": "India"
+        },
+        {
+            "name": "Arts (Music/Photo)",
+            "url": "https://x.com/i/lists/YOUR_ARTS_LIST_ID_HERE",
+            "subcategory": "Arts"
+        }
+    ],
+    "News": [
+        {
+            "name": "BBC News - World",
+            "url": "http://feeds.bbci.co.uk/news/world/rss.xml"
+        },
+        {
+            "name": "CNN.com - RSS Channel - World",
+            "url": "http://rss.cnn.com/rss/edition_world.rss"
+        },
+        {
+            "name": "International: Top News And Analysis",
+            "url": "https://www.cnbc.com/id/100727362/device/rss/rss.html"
+        },
+        {
+            "name": "NDTV News - World-news",
+            "url": "http://feeds.feedburner.com/ndtvnews-world-news"
+        },
+        {
+            "name": "NYT > World News",
+            "url": "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+        },
+        {
+            "name": "Top stories - Google News",
+            "url": "https://news.google.com/rss"
+        },
+        {
+            "name": "World",
+            "url": "http://feeds.washingtonpost.com/rss/world"
+        },
+        {
+            "name": "World News",
+            "url": "https://www.reddit.com/r/worldnews/.rss"
+        },
+        {
+            "name": "World News Headlines, Latest International News, World Breaking News - Times of India",
+            "url": "https://timesofindia.indiatimes.com/rssfeeds/296589292.cms"
+        },
+        {
+            "name": "World news | The Guardian",
+            "url": "https://www.theguardian.com/world/rss"
+        },
+        {
+            "name": "Yahoo News - Latest News & Headlines",
+            "url": "https://www.yahoo.com/news/rss"
+        }
+    ],
+    "DIY": [
+        {
+            "name": "A Beautiful Mess",
+            "url": "https://abeautifulmess.com/feed"
+        },
+        {
+            "name": "Apartment Therapy| Saving the world, one room at a time",
+            "url": "https://www.apartmenttherapy.com/projects.rss"
+        },
+        {
+            "name": "Blog \u2013 Hackaday",
+            "url": "https://hackaday.com/blog/feed/"
+        },
+        {
+            "name": "Centsational Style",
+            "url": "https://centsationalstyle.com/feed/"
+        },
+        {
+            "name": "Doityourself.com",
+            "url": "https://www.doityourself.com/feed"
+        },
+        {
+            "name": "Etsy Journal",
+            "url": "https://blog.etsy.com/en/feed/"
+        },
+        {
+            "name": "How-To Geek",
+            "url": "https://www.howtogeek.com/feed/"
+        },
+        {
+            "name": "IKEA Hackers",
+            "url": "https://www.ikeahackers.net/feed"
+        },
+        {
+            "name": "MUO - Feed",
+            "url": "https://www.makeuseof.com/feed/"
+        },
+        {
+            "name": "Oh Happy Day!",
+            "url": "http://ohhappyday.com/feed/"
+        },
+        {
+            "name": "WonderHowTo",
+            "url": "https://www.wonderhowto.com/rss.xml"
+        }
+    ],
+    "Architecture": [
+        {
+            "name": "A Daily Dose of Architecture Books",
+            "url": "http://feeds.feedburner.com/archidose"
+        },
+        {
+            "name": "ArchDaily",
+            "url": "http://feeds.feedburner.com/Archdaily"
+        },
+        {
+            "name": "Archinect - News",
+            "url": "https://archinect.com/feed/1/news"
+        },
+        {
+            "name": "Architectural Digest",
+            "url": "https://www.architecturaldigest.com/feed/rss"
+        },
+        {
+            "name": "Architectural Digest",
+            "url": "https://www.youtube.com/feeds/videos.xml?user=ArchitecturalDigest"
+        },
+        {
+            "name": "Architecture",
+            "url": "https://www.reddit.com/r/architecture/.rss"
+        },
+        {
+            "name": "Architecture \u2013 Dezeen",
+            "url": "https://www.dezeen.com/architecture/feed/"
+        },
+        {
+            "name": "CONTEMPORIST",
+            "url": "https://www.contemporist.com/feed/"
+        },
+        {
+            "name": "Comments on:",
+            "url": "https://inhabitat.com/architecture/feed/"
+        },
+        {
+            "name": "Design MilkArchitecture \u2013 Design Milk",
+            "url": "https://design-milk.com/category/architecture/feed/"
+        },
+        {
+            "name": "Journal",
+            "url": "https://architizer.wpengine.com/feed/"
+        },
+        {
+            "name": "Living Big In A Tiny House",
+            "url": "https://www.youtube.com/feeds/videos.xml?user=livingbigtinyhouse"
+        },
+        {
+            "name": "The Architect\u2019s Newspaper",
+            "url": "https://archpaper.com/feed"
+        },
+        {
+            "name": "architecture \u2013 designboom | architecture & design magazine",
+            "url": "https://www.designboom.com/architecture/feed/"
+        }
+    ],
+    "iOS Development": [
+        {
+            "name": "ALL SHOWS - Devchat.tv",
+            "url": "https://feeds.feedwrench.com/all-shows-devchattv.rss"
+        },
+        {
+            "name": "Alberto De Bortoli",
+            "url": "https://albertodebortoli.com/rss/"
+        },
+        {
+            "name": "Augmented Code",
+            "url": "https://augmentedcode.io/feed/"
+        },
+        {
+            "name": "Benoit Pasquier - Swift, Data and more",
+            "url": "https://benoitpasquier.com/index.xml"
+        },
+        {
+            "name": "Fabisevi.ch",
+            "url": "https://www.fabisevi.ch/feed.xml"
+        },
+        {
+            "name": "Mobile A11y",
+            "url": "https://mobilea11y.com/index.xml"
+        },
+        {
+            "name": "More Than Just Code podcast - iOS and Swift development, news and advice",
+            "url": "https://feeds.fireside.fm/mtjc/rss"
+        },
+        {
+            "name": "News - Apple Developer",
+            "url": "https://developer.apple.com/news/rss/news.rss"
+        },
+        {
+            "name": "Ole Begemann",
+            "url": "https://oleb.net/blog/atom.xml"
+        },
+        {
+            "name": "Pavel Zak\u2019s dev blog",
+            "url": "https://nerdyak.tech/feed.xml"
+        },
+        {
+            "name": "Swift by Sundell",
+            "url": "https://www.swiftbysundell.com/feed.rss"
+        },
+        {
+            "name": "Swift by Sundell",
+            "url": "https://swiftbysundell.com/feed.rss"
+        },
+        {
+            "name": "SwiftRocks",
+            "url": "https://swiftrocks.com/rss.xml"
+        },
+        {
+            "name": "The Atomic Birdhouse",
+            "url": "https://atomicbird.com/index.xml"
+        },
+        {
+            "name": "Under the Radar",
+            "url": "https://www.relay.fm/radar/feed"
+        },
+        {
+            "name": "Use Your Loaf - iOS Development News & Tips",
+            "url": "https://useyourloaf.com/blog/rss.xml"
+        },
+        {
+            "name": "inessential.com",
+            "url": "https://inessential.com/xml/rss.xml"
+        },
+        {
+            "name": "tyler.io",
+            "url": "https://tyler.io/feed/"
+        }
+    ],
+    "Music": [
+        {
+            "name": "Billboard",
+            "url": "https://www.billboard.com/articles/rss.xml"
+        },
+        {
+            "name": "Consequence",
+            "url": "http://consequenceofsound.net/feed"
+        },
+        {
+            "name": "EDM.com - The Latest Electronic Dance Music News, Reviews & Artists",
+            "url": "https://edm.com/.rss/full/"
+        },
+        {
+            "name": "Metal Injection",
+            "url": "http://feeds.feedburner.com/metalinjection"
+        },
+        {
+            "name": "Music Business Worldwide",
+            "url": "https://www.musicbusinessworldwide.com/feed/"
+        },
+        {
+            "name": "RSS: News",
+            "url": "http://pitchfork.com/rss/news"
+        },
+        {
+            "name": "Song Exploder",
+            "url": "http://songexploder.net/feed"
+        },
+        {
+            "name": "Your EDM",
+            "url": "https://www.youredm.com/feed"
+        }
+    ],
+    "Movies": [
+        {
+            "name": "/Film",
+            "url": "https://feeds2.feedburner.com/slashfilm"
+        },
+        {
+            "name": "Ain't It Cool News Feed",
+            "url": "https://www.aintitcool.com/node/feed/"
+        },
+        {
+            "name": "ComingSoon.net",
+            "url": "https://www.comingsoon.net/feed"
+        },
+        {
+            "name": "Deadline",
+            "url": "https://deadline.com/feed/"
+        },
+        {
+            "name": "Film School Rejects",
+            "url": "https://filmschoolrejects.com/feed/"
+        },
+        {
+            "name": "FirstShowing.net",
+            "url": "https://www.firstshowing.net/feed/"
+        },
+        {
+            "name": "IndieWire",
+            "url": "https://www.indiewire.com/feed"
+        },
+        {
+            "name": "Movie News and Discussion",
+            "url": "https://reddit.com/r/movies/.rss"
+        },
+        {
+            "name": "Movies",
+            "url": "https://www.bleedingcool.com/movies/feed/"
+        },
+        {
+            "name": "The A.V. Club",
+            "url": "https://film.avclub.com/rss"
+        },
+        {
+            "name": "Variety",
+            "url": "https://variety.com/feed/"
+        }
+    ],
+    "Android": [
+        {
+            "name": "All About Android (Audio)",
+            "url": "https://feeds.twit.tv/aaa.xml"
+        },
+        {
+            "name": "Android",
+            "url": "https://blog.google/products/android/rss"
+        },
+        {
+            "name": "Android",
+            "url": "https://www.reddit.com/r/android/.rss"
+        },
+        {
+            "name": "Android Authority",
+            "url": "https://www.androidauthority.com/feed"
+        },
+        {
+            "name": "Android Authority",
+            "url": "https://www.youtube.com/feeds/videos.xml?user=AndroidAuthority"
+        },
+        {
+            "name": "Android Central - Android Forums, News, Reviews, Help and Android Wallpapers",
+            "url": "http://feeds.androidcentral.com/androidcentral"
+        },
+        {
+            "name": "Android Central Podcast",
+            "url": "http://feeds.feedburner.com/AndroidCentralPodcast"
+        },
+        {
+            "name": "Android Community",
+            "url": "https://androidcommunity.com/feed/"
+        },
+        {
+            "name": "Android Police \u2013 Android news, reviews, apps, games, phones, tablets",
+            "url": "http://feeds.feedburner.com/AndroidPolice"
+        },
+        {
+            "name": "AndroidGuys",
+            "url": "https://www.androidguys.com/feed"
+        },
+        {
+            "name": "Cult of Android",
+            "url": "https://www.cultofandroid.com/feed"
+        },
+        {
+            "name": "Cyanogen Mods",
+            "url": "https://www.cyanogenmods.org/feed"
+        },
+        {
+            "name": "Droid Life",
+            "url": "https://www.droid-life.com/feed"
+        },
+        {
+            "name": "GSMArena.com - Latest articles",
+            "url": "https://www.gsmarena.com/rss-news-reviews.php3"
+        },
+        {
+            "name": "Phandroid",
+            "url": "http://feeds2.feedburner.com/AndroidPhoneFans"
+        },
+        {
+            "name": "TalkAndroid",
+            "url": "http://feeds.feedburner.com/AndroidNewsGoogleAndroidForums"
+        },
+        {
+            "name": "xda-developers",
+            "url": "https://data.xda-developers.com/portal-feed"
+        }
+    ],
+    "Football": [
+        {
+            "name": "EFL Championship",
+            "url": "https://www.reddit.com/r/Championship/.rss?format=xml"
+        },
+        {
+            "name": "Football - The People's Sport",
+            "url": "https://www.reddit.com/r/football/.rss?format=xml"
+        },
+        {
+            "name": "Football News, Live Scores, Results & Transfers | Goal.com",
+            "url": "https://www.goal.com/feeds/en/news"
+        },
+        {
+            "name": "Football365",
+            "url": "https://www.football365.com/feed"
+        },
+        {
+            "name": "Premier League",
+            "url": "https://www.reddit.com/r/PremierLeague/.rss?format=xml"
+        },
+        {
+            "name": "TEAMtalk",
+            "url": "https://www.teamtalk.com/feed"
+        },
+        {
+            "name": "WhoScored.com",
+            "url": "https://www.whoscored.com/Feed/News"
+        },
+        {
+            "name": "World Soccer Talk",
+            "url": "https://worldsoccertalk.com/feed/"
+        }
+    ]
+}

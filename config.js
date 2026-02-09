@@ -2,7 +2,7 @@
 const CONFIG = {
     // Development settings (local)
     development: {
-        proxyHost: '192.168.1.226',
+        proxyHost: window.location.hostname, // Auto-detect local IP/localhost
         proxyPort: 3000,
         appPort: 8080,
         mode: 'development'
@@ -30,10 +30,16 @@ const CONFIG = {
         return isDev ? this.development : this.production;
     },
 
-    // Get proxy URL
+    // Get proxy URL (Legacy)
     get proxyUrl() {
         const { proxyHost, proxyPort } = this.current;
         return `http://${proxyHost}:${proxyPort}/proxy`;
+    },
+
+    // Get API URL
+    get apiUrl() {
+        const { proxyHost, proxyPort } = this.current;
+        return `http://${proxyHost}:${proxyPort}/api`;
     }
 };
 

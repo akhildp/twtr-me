@@ -11,6 +11,11 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "puppeteer": "^24.37.2"
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "node-fetch": "^2.7.0",
+    "pg": "^8.18.0",
+    "rss-parser": "^3.13.0",
+    "sqlite3": "^5.1.7"
   }
 }

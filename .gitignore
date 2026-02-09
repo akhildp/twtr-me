@@ -29,3 +29,11 @@ feed_history
 twitter_accts.csv
 .venv/
 twts/
+logs/
+*.log
+__pycache__/
+.DS_Store
+
+# Security
+cookies.json
+tweets.db
