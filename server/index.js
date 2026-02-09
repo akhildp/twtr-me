@@ -43,7 +43,7 @@ if (isPostgres) {
     });
 } else {
     console.log('Connecting to SQLite database...');
-    const dbPath = path.resolve(__dirname, 'tweets.db');
+    const dbPath = path.resolve(__dirname, '../data/tweets.db');
     db = new sqlite3.Database(dbPath, (err) => {
         if (err) console.error('Error opening SQLite DB:', err.message);
         else {

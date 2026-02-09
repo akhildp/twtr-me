@@ -25,7 +25,7 @@ def get_db_connection():
     if IS_POSTGRES:
         conn = psycopg2.connect(DB_URL)
     else:
-        conn = sqlite3.connect('tweets.db')
+        conn = sqlite3.connect('../data/tweets.db')
         conn.row_factory = sqlite3.Row
     return conn
 
