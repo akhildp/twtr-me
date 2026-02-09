@@ -67,10 +67,40 @@ sudo ufw allow 3000/tcp
 sudo ufw reload
 ```
 
-## 7. Verify Deployment
+## 7. Enable HTTPS (Optional)
+To get the lock icon (SSL), follow these steps:
+
+### 1. Point your Domain
+Log in to your domain registrar and create an **A Record**:
+-   **Host**: `@` (or a subdomain like `rss`)
+-   **Value**: `74.208.174.161`
+
+### 2. Configure Caddy
+The repository includes a `Caddyfile`. If you are using a subdomain (like `rss.twtr.me`), edit it:
+```bash
+nano Caddyfile
+# Change "twtr.me" to your subdomain
+```
+
+### 3. Open Web Ports
+You must open ports 80 and 443 in your **IONOS Cloud Panel** and **UFW**:
+```bash
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw reload
+```
+
+### 4. Redeploy
+```bash
+git pull origin main
+docker-compose up -d --build
+```
+Caddy will automatically fetch certificates for your domain.
+
+## 8. Verify Deployment
 -   **Check status**: `docker ps`
--   **View logs**: `docker-compose logs -f`
--   **Access App**: Open `http://YOUR_VPS_IP:3000` in your browser.
+-   **View logs**: `docker-compose logs -f caddy`
+-   **Access App**: Open `https://twtr.me` in your browser.
 
 ## Maintenance
 
