@@ -517,7 +517,7 @@ class FeedReader {
 
         let html = `<option value="">-- Select Source --</option>`;
 
-        Object.keys(FEED_CATEGORIES).forEach(cat => {
+        Object.keys(FEED_CATEGORIES).filter(cat => !cat.startsWith('_')).forEach(cat => {
             if (cat === 'Twitter') {
                 const subcats = [...new Set(FEED_CATEGORIES[cat].map(f => f.subcategory))].sort();
                 html += `<optgroup label="Twitter">`;
@@ -864,7 +864,7 @@ class FeedReader {
 
     loadFeeds() {
         this.feeds = [];
-        const availableCategories = Object.keys(FEED_CATEGORIES);
+        const availableCategories = Object.keys(FEED_CATEGORIES).filter(cat => !cat.startsWith('_'));
         let cats = this.settings.enabledCategories || [];
         if (cats.length === 0) cats = availableCategories;
 
@@ -952,7 +952,7 @@ class FeedReader {
 
         let html = '';
 
-        Object.keys(FEED_CATEGORIES).forEach(category => {
+        Object.keys(FEED_CATEGORIES).filter(cat => !cat.startsWith('_')).forEach(category => {
             const feeds = FEED_CATEGORIES[category];
             const subcategories = [...new Set(feeds.map(f => f.subcategory).filter(Boolean))];
 
