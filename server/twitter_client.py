@@ -189,6 +189,7 @@ def convert_to_rss(tweets, title, link, description):
             retweet_count = getattr(tweet, 'retweet_count', 0)
 
             full_desc = f"{rt_header_html}{text}{media_html}{quote_html}"
+            full_desc_html = full_desc.replace('\n', '<br>')
             
             rss += f"""    <item>
         <title>@{screen_name}</title>
@@ -197,7 +198,7 @@ def convert_to_rss(tweets, title, link, description):
         <link>https://xcancel.com/{screen_name}/status/{tw_id}</link>
         <favorite_count>{favorite_count}</favorite_count>
         <retweet_count>{retweet_count}</retweet_count>
-        <description><![CDATA[{full_desc.replace('\n', '<br>')}]]></description>
+        <description><![CDATA[{full_desc_html}]]></description>
         <guid>https://xcancel.com/{screen_name}/status/{tw_id}</guid>
         <pubDate>{created_at}</pubDate>
     </item>
