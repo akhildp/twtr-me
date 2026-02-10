@@ -52,11 +52,50 @@ if (isPostgres) {
             db.run('PRAGMA journal_mode = WAL;');
             db.run('PRAGMA synchronous = NORMAL;');
 
-            // Ensure indexes for performance
-            db.run('CREATE INDEX IF NOT EXISTS idx_tweets_published_at ON tweets(published_at DESC);');
-            db.run('CREATE INDEX IF NOT EXISTS idx_rss_published_at ON rss(published_at DESC);');
-            db.run('CREATE INDEX IF NOT EXISTS idx_tweets_feed_url ON tweets(feed_url);');
-            db.run('CREATE INDEX IF NOT EXISTS idx_rss_feed_url ON rss(feed_url);');
+            // Initialize Tables if they don't exist
+            const schema = `
+                CREATE TABLE IF NOT EXISTS tweets (
+                    id TEXT PRIMARY KEY,
+                    feed_url TEXT,
+                    feed_name TEXT,
+                    title TEXT,
+                    content TEXT,
+                    author TEXT,
+                    link TEXT,
+                    image_url TEXT,
+                    published_at DATETIME,
+                    author_avatar TEXT,
+                    favorite_count INTEGER DEFAULT 0,
+                    retweet_count INTEGER DEFAULT 0
+                );
+                CREATE TABLE IF NOT EXISTS rss (
+                    id TEXT PRIMARY KEY,
+                    feed_url TEXT,
+                    feed_name TEXT,
+                    title TEXT,
+                    content TEXT,
+                    author TEXT,
+                    link TEXT,
+                    image_url TEXT,
+                    published_at DATETIME,
+                    author_avatar TEXT,
+                    favorite_count INTEGER DEFAULT 0,
+                    retweet_count INTEGER DEFAULT 0
+                );
+            `;
+
+            db.exec(schema, (err) => {
+                if (err) {
+                    console.error('Error initializing schema:', err.message);
+                } else {
+                    console.log('Database schema initialized.');
+                    // Ensure indexes for performance
+                    db.run('CREATE INDEX IF NOT EXISTS idx_tweets_published_at ON tweets(published_at DESC);');
+                    db.run('CREATE INDEX IF NOT EXISTS idx_rss_published_at ON rss(published_at DESC);');
+                    db.run('CREATE INDEX IF NOT EXISTS idx_tweets_feed_url ON tweets(feed_url);');
+                    db.run('CREATE INDEX IF NOT EXISTS idx_rss_feed_url ON rss(feed_url);');
+                }
+            });
         }
     });
 }
