@@ -2,7 +2,12 @@ import asyncio
 import sys
 import json
 import os
-from twikit import Client
+try:
+    from twikit import Client
+except ImportError as e:
+    sys.stderr.write(f"CRITICAL: twikit library not found: {e}\n")
+    sys.stderr.write("Please ensure 'twikit' is in requirements.txt and you ran 'docker-compose up -d --build'\n")
+    sys.exit(1)
 from datetime import datetime
 
 # Initialize Client
