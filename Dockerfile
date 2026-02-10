@@ -1,6 +1,5 @@
-
-# Use Node.js as the base since the main server is Node
-FROM node:18-bullseye
+# Use Node.js 20 on Bookworm (provides Python 3.11+)
+FROM node:20-bookworm
 
 # Install Python 3 and pip
 RUN apt-get update && apt-get install -y \
