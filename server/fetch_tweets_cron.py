@@ -81,16 +81,19 @@ def fetch_feed(feed_url):
     # For Twitter URLs, use twitter_client.py (Twikit authenticated session)
     print(f"  Fetching using authenticated twitter_client.py...")
     try:
-        # Get the absolute path to the virtualenv python
-        venv_python = os.path.join(os.path.dirname(os.getcwd()), '.venv', 'bin', 'python')
+        # Get the absolute path to the virtualenv python and twitter_client.py
+        venv_python = os.path.join(os.path.dirname(BASE_DIR), '.venv', 'bin', 'python')
+        client_script = os.path.join(BASE_DIR, 'twitter_client.py')
+        
         if not os.path.exists(venv_python):
             venv_python = 'python3' # Fallback
             
         process = subprocess.Popen(
-            [venv_python, 'twitter_client.py', feed_url],
+            [venv_python, client_script, feed_url],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
+            cwd=BASE_DIR
         )
         stdout, stderr = process.communicate(timeout=60)
         
@@ -113,10 +116,10 @@ def fetch_feed(feed_url):
 def save_tweet(conn, feed, entry):
     cursor = conn.cursor()
     
-    # Extract data
+    # Extract data with fallbacks for different RSS formats
     tweet_id = entry.id if 'id' in entry else entry.link
-    title = entry.title
-    content = entry.description
+    title = entry.get('title', 'No Title')
+    content = entry.get('description', entry.get('summary', entry.get('content', [{'value': ''}])[0].get('value', '')))
     
     # Handle custom tags from twitter_client.py
     # Fallback to feed name if author_name is missing
