@@ -225,7 +225,7 @@ async def main():
     if os.path.exists(cookies_path):
         try:
             client.load_cookies(cookies_path)
-            # print("Loaded cookies from file")
+            sys.stderr.write(f"✓ Loaded cookies from {cookies_path}\n")
         except Exception as e:
             print(f"Error loading cookies from file: {e}")
             sys.exit(1)

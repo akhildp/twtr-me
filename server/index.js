@@ -238,10 +238,15 @@ const fetchAndCacheFeed = async (feedUrl, feedName = null) => {
 
             if (data.includes('<rss') || data.includes('<feed')) {
                 feedData = await parser.parseString(data);
-                console.log(`  ✓ Success via twitter_client.py`);
+                console.log(`  ✓ Success via twitter_client.py (${feedData.items ? feedData.items.length : 0} items)`);
+            } else {
+                console.warn(`  ✗ Python returned no RSS data. Stderr: ${errorData || 'None'}`);
             }
         } catch (e) {
-            console.warn(`  ✗ Failed via twitter_client.py: ${e.message}`);
+            console.error(`  ✗ Failed via twitter_client.py error: ${e.message}`);
+            if (e.message.includes('Python exited with code')) {
+                console.error(`    Full Python Stderr: ${e.message.split(': ')[1] || 'None'}`);
+            }
         }
     } else {
         // Normal RSS feed
