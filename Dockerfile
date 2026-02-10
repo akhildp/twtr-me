@@ -24,8 +24,8 @@ COPY . .
 RUN python3 -m venv .venv && \
     .venv/bin/pip install --no-cache-dir -r requirements.txt
 
-# Create necessary directories
-RUN mkdir -p data/logs
+# Create necessary directories and log files
+RUN mkdir -p data/logs && touch data/logs/cron.log
 
 # Setup Cron
 COPY docker-cron /etc/cron.d/twtr-cron
