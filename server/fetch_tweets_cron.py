@@ -13,8 +13,10 @@ import feedparser
 import requests
 
 # Configuration
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_URL = os.environ.get('DATABASE_URL')
-FEEDS_FILE = '../data/feeds.json'
+FEEDS_FILE = os.path.join(BASE_DIR, '../data/feeds.json')
+SQLITE_PATH = os.path.join(BASE_DIR, '../data/tweets.db')
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
 TIMEOUT = 15
 
@@ -25,7 +27,7 @@ def get_db_connection():
     if IS_POSTGRES:
         conn = psycopg2.connect(DB_URL)
     else:
-        conn = sqlite3.connect('../data/tweets.db')
+        conn = sqlite3.connect(SQLITE_PATH)
         conn.row_factory = sqlite3.Row
     return conn
 
